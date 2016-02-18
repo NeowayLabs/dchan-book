@@ -1,0 +1,54 @@
+#+TITLE: 9P - Benchmark comparisons
+#+AUTHOR: Tiago Natel de Moura
+#+STARTUP: overview
+#+TAGS: PROJECT(p)
+#+STARTUP: hidestars
+
+* Comparison of some 9P implementations
+
+** Introduction
+
+This document is live resource for 9P implementation design and
+performances.
+
+9P is a network protocol to develop network file systems. It was
+created at Bell Labs for the Plan9 Operating System. More information
+about the protocol can be seen here:
+
+http://9p.cat-v.org/documentation/
+
+** Methodology
+
+The research will focus on simple in-memory server implementations and
+the concepts in question are:
+
+- Design choice
+- API
+- Performance
+- Security
+
+For each library, a simple 9P server exposing a virtual file called
+channel will be implemented. This file will support only 4 operations
+(open, read, write and close). It will be not possible to truncate or
+change any metadata of the file. The implementations will be very
+straightforward looking for the simple solution.
+
+For each implementation, the measures below will be analyzed:
+
+- Transmission rate (TX)
+- Receive rate (RX)
+- Average transmission rate (ATX)
+- Average receive rate (ARX)
+- Memory usage
+- CPU usage
+- Number of file descriptors open
+
+** Go
+
+The most active Go implementation is go9p from Latchesar Ionkov.
+
+- https://github.com/lionkov/go9p
+
+This library is much closer to Plan9 lib9p design implementation, but
+with a more user friendly API. It supports the versions 9P2000 and
+9P2000.u (unix extension).
