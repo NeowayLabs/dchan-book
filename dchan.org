@@ -17,7 +17,22 @@
   Dchan is able to share the files in the network with the help of the
   9P protocol.
 
-** Why
+  This project uses the concept of [[https://en.wikipedia.org/wiki/Literate_programming][Literate Programming]] of Donald
+  Knuth.
+
+#+BEGIN_QUOTE
+Let us change our traditional attitude to the construction of
+programs: Instead of imagining that our main task is to instruct a
+computer what to do, let us concentrate rather on explaining to human
+beings what we want a computer to do.  @@html:<div
+align="right"><i>@@Donald Knuth - Literate Programming
+(1984).@@html:</i></div>@@
+#+END_QUOTE
+
+  This book is the only source for design ideas, code, documentation and
+  tests. From here, we build everything.
+
+** Why dchan?
    Neoway organizational structure reflects it's software architecture
 (or the other way around?)  and then good communication between teams
 and architectures is a must!  Each team is free to choose the IPC
@@ -25,10 +40,11 @@ technology that makes more sense for the kind of problems they're
 solving, but exists inter-teams communications that requires a common
 protocol. Today we use RabbitMQ service for message passing
 inter-teams and at various places of architecture and this proved
-problematic for two reasons.
+problematic for three reasons.
 
 - Hard to achieve quality software;
 - No mechanism to synchronize publishers and consumers;
+- It doesn't scale;
 
 AMQP (Advanced Message Queue Protocol) is a complex bad designed
 specification protocol and because of that, client libraries are huge
@@ -55,6 +71,8 @@ messaging, it works, but using the message broker as
 a database for a large dataset processing requires much more strong
 database capabilities in the broker than messaging (and AMQP is a
 messaging protocol).
+
+The third problem is a consequence of the the second problem.
 
 ** Desired goals
 
@@ -109,6 +127,39 @@ Linux kernel have native support in the kernel to create 9P clients
 For more information on 9P implementation see the link below:
 
 http://9p.cat-v.org/implementations
+
+*** CSP Communication Semantics
+
+Dchan uses the Concurrent Sequential Processing semantics on top of
+the virtual file interface. At core of the CSP semantics are two
+fundamental ideas:
+
+- Atomic communication
+- Non-deterministic choice.
+
+It's the same concepts as independently defined by Robin Milner in the
+Calculus of Communicating Systems (CCS)[fn:1].
+
+*** Atomic communication
+
+Atomic communication is obtained by rendezvous points. Rendezvous
+points are places in time and space that processes trying to
+communicate meet in order to occur the communication. During
+rendezvous both the sender and receiver processes block until the
+other side is ready to communicate and implies that the sending and
+receiving of a message occurs simultaneously.
+
+#+BEGIN_QUOTE
+A real world analogy to rendezvous can be found in telephone
+communications (without answering machines). Both the caller and
+callee must be simultaneously present for a phone conversation to
+occur.
+Neil Smith at [[http://ptolemy.eecs.berkeley.edu/papers/99/HMAD/html/csp.html][CSP Domain]]
+#+END_QUOTE
+
+*** Non-deterministic choice
+
+TODO
 
 *** Client interface
 
@@ -244,28 +295,77 @@ To build the software you can execute:
 make
 #+END_SRC
 
+The Makefile follows
+
 
 #+NAME: Makefile
 #+BEGIN_SRC makefile :tangle Makefile
-  .PHONY: all build test clean doc
+### -*- Makefile -*- Dchan build options
 
-  all: clean build test doc
-          @echo "build successfully"
+# To install `dchan', type `make' and then `make install'.
 
-  build:
-          go build -v
+BIN_DIR=/usr/local/bin
+ORG_FILE=dchan.org
 
-  test:
-          go test -v ./...
+.PHONY: all build test clean doc
 
-  clean:
-          rm dchan
+all: clean tangle build test doc
+	@echo "build successfully"
 
-  doc:
-          echo "not implemented"
+tangle:
+	org-tangle main.go
+
+build:
+	go build -v
+
+test:
+	go test -v ./...
+
+install:
+	cp dchan $(BIN_DIR)
+
+clean:
+	-rm dchan
+
+doc:
+	org2pdf dchan.org
+
+
 #+END_SRC
 
 
 ** Implementation
 
-Dchan
+Main
+
+
+#+NAME: main.go
+#+BEGIN_SRC go :tangle main.go
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Printf("dchan running")
+}
+
+#+END_SRC
+
+** Test cases
+
+*** Network partitions
+
+Network partition is the most frequent problem that can affect
+Dchan. There's some cases that needs to be covered in order to achieve
+reliability in the exchange of messages.
+
+
+
+| Description | steps of events |   |   |   |
+|-------------+-----------------+---+---+---|
+|             |                 |   |   |   |
+
+* Footnotes
+
+[fn:1] R. Milner, "A Calculus of Communicating Systems", Lecture Notes
+in Computer Science, Vol. 92, Springer-Verlag, 1980.
