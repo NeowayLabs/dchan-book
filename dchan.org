@@ -325,7 +325,7 @@ install:
 	cp dchan $(BIN_DIR)
 
 clean:
-	-rm dchan
+	-rm dchan *.tex *.pdf *.html *.go *.txt *~
 
 doc:
 	org2pdf dchan.org
