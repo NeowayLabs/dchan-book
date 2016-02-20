@@ -158,11 +158,28 @@ Neil Smith at [[http://ptolemy.eecs.berkeley.edu/papers/99/HMAD/html/csp.html][C
 
 *** Non-deterministic choice
 
-TODO
+Non-deterministic choice provides processes with the ability to
+randomly select between a set of possible atomic communications. In
+the Go programming language the construct for this is called
+"select"[fn:3], other languages call it "alt". Select statements
+choose which of a set of possible send or receive operations will
+proceed and is very useful when dealing with more than 1 channel per
+process.
 
 *** Dchan CSP semantics
 
-TODO
+Dchan supports atomic communications and it is guaranteed to be atomic
+across the network with the help of the 9P file abstraction.
+
+Non-deterministic choice, in the other hand, is a much more complex
+task to implement in distributed way and escapes from the file
+semantics. The problem arises from the fact that it requires a special
+API to "mark" a set of channels to participate in the "select", but
+the most closest file's syscall to achieve this transparently are
+select/poll/epoll, but they doesn't map to any 9P message in the
+protocol. Dchan doesn't support "select", but apart from being complex
+to implement and requiring an API, it could be implemented in the
+future.
 
 *** Client interface
 
@@ -335,6 +352,20 @@ The system supports dynamic change of settings by writing to this file.
 Read the file to get the current settings and metrics.
 More information about settings and metrics in the [[Ctl][Ctl]] section.
 
+Dchan-proxy is a local unix socket server created to simplify client
+applications avoiding other semantics related to network connection.
+The linux kernel will establish a 9P connection to dchan-proxy for
+each application, and dchan-proxy will establish a 9P connection over
+TCP with dchan. Dchan-proxy is designed for block in the file's
+syscalls in case of network partitions until re-connection finishes. It
+stores the state of call and re-apply when re-connected. This way,
+client applications will never know that something bad occurred in the
+network (except that some syscalls like read blocked for a long
+time).
+
+** Ctl
+
+
 ** Building
 
 To build the software you can execute:
@@ -381,6 +412,8 @@ For non-emacs developers, install [[https://github.com/fniessen/orgmk][orgmk]].
 Read the [[https://golang.org/doc/install][Go Getting started]] tutorial.
 
 ** Implementation
+
+*** dchan-proxy
 
 *** Makefile
 
@@ -461,3 +494,7 @@ reliability in the exchange of messages.
 
 [fn:1] R. Milner, "A Calculus of Communicating Systems", Lecture Notes
 in Computer Science, Vol. 92, Springer-Verlag, 1980.
+
+[fn:2] Ptolemy II: http://ptolemy.eecs.berkeley.edu/papers/99/HMAD/html/csp.html
+
+[fn:3] https://golang.org/ref/spec\#Select_statements
