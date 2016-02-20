@@ -7,15 +7,15 @@
 * dchan
 
   Dchan is a server that exposes channels for inter-process
-  communications (IPC) over a file tree interface.  The channels are
+  communications (IPC) over a file tree interface.  These channels are
   much like Go channels and can be used in the same way but between
   processes.  Instead of implementing a new protocol for data exchange
-  like AMQP, Dchan uses a simple file interface.  There's no need for
+  like AMQP, Dchan uses a simple file interface.  There's no need of
   client libraries for each language (every language knows how to read
   and write from files).
 
-  Dchan is able to share the files in the network with the help of the
-  9P protocol.
+  Dchan is able to share those files in the network with the help of
+  the 9P protocol.
 
   This project uses the concept of [[https://en.wikipedia.org/wiki/Literate_programming][Literate Programming]] of Donald
   Knuth.
@@ -33,18 +33,18 @@ align="right"><i>@@Donald Knuth - Literate Programming
   tests. From here, we build everything.
 
 ** Why dchan?
-   Neoway organizational structure reflects it's software architecture
-(or the other way around?)  and then good communication between teams
-and architectures is a must!  Each team is free to choose the IPC
-technology that makes more sense for the kind of problems they're
-solving, but exists inter-teams communications that requires a common
-protocol. Today we use RabbitMQ service for message passing
-inter-teams and at various places of architecture and this proved
-problematic for three reasons.
+   Neoway organizational structure reflects in their software
+architecture (or the other way around?)  and then good communication
+between teams and architectures is a must!  Each team is free to
+choose the IPC technology that makes more sense for the kind of
+problems they're solving, but exists inter-teams communications that
+requires a common protocol. Today we use RabbitMQ service for message
+passing inter-teams and at several places of architecture and this
+proved to be problematic for three reasons.
 
-- Hard to achieve quality software;
-- No mechanism to synchronize publishers and consumers;
-- It doesn't scale;
+1. Hard to achieve quality software;
+2. No mechanism to synchronize publishers and consumers;
+3. It doesn't scale;
 
 AMQP (Advanced Message Queue Protocol) is a complex bad designed
 specification protocol and because of that, client libraries are huge
@@ -55,7 +55,7 @@ in the correct manner and must be correctly tested. Testing is hard
 because the need for a central complete broker (not easy to mock with
 libraries) and some way to start/stop the broker for test
 re-connection and guarantees (durability). In simple words: hard to
-achieve quality code.
+achieve good quality code.
 
 For more information about this kind of problems, read the article
 below from one of the AMQP creators:
@@ -63,14 +63,13 @@ below from one of the AMQP creators:
 http://www.imatix.com/articles:whats-wrong-with-amqp/
 
 The second problem is that AMQP does not say any words about
-synchronism between publishers and consumers of queues, and the
-broker is designed to be a complete database to store the difference
-between throughput of clients. Sometimes this is a
-desired behavior, but sometimes it is not. If you have a low traffic
-messaging, it works, but using the message broker as
-a database for a large dataset processing requires much more strong
-database capabilities in the broker than messaging (and AMQP is a
-messaging protocol).
+synchronism between publishers and consumers of queues, and the broker
+is designed to be a complete database to store the difference between
+throughput of clients. Sometimes this is a desired behavior, but
+sometimes it is not. If you have a low traffic messaging, it works,
+but using the message broker as a database for a large dataset
+processing requires a stronger database capabilities in the broker
+than messaging (and AMQP is a messaging protocol).
 
 The third problem is a consequence of the the second problem.
 
@@ -92,13 +91,13 @@ network. Simple files (real disk files) aren't suitable for IPC
 because of the global nature of the disk incurring races in concurrent
 access between processes. But UNIX operating systems supports the idea
 of virtual file systems (VFS), an abstraction layer on top of a more
-concrete file system, to make possible client applications to
+concrete file system, to make possible client application's
 interact with different kind of concrete file systems in a uniform
 way. In practical, VFS is a kernel interface (or contract) to file
 system drivers.
 
 On linux, every file system driver implements the VFS contract, and
-then it's possible to every program that read and write to files to
+then it's possible to every program that read and write on files to
 use any file system without code changes. It's good because old tools
 like cat, sed, tail, and so on, can be used for network file systems
 without changes. The VFS is useful to build stackable (or union fs
@@ -108,7 +107,7 @@ section.
 Network file systems are a class of file systems that (commonly) map
 userspace IO operations into remote procedure calls, turning possible
 interact with remote resources as if it were local. NFS (Network File
-System) and 9P operate this way, the former being a very complex
+System) and 9P works this way, the former being a very complex
 protocol commonly used with kernel drivers on client and server side,
 but the latter being very simple, allowing userspace file servers. For
 9P exists tons of libraries for various programming languages to
@@ -143,8 +142,8 @@ Calculus of Communicating Systems (CCS)[fn:1].
 *** Atomic communication
 
 Atomic communication is obtained by rendezvous points. Rendezvous
-points are places in time and space that processes trying to
-communicate meet in order to occur the communication. During
+points are places in time and space, where processes who are trying to
+communicate, meet each other in order to occur the communication. During
 rendezvous both the sender and receiver processes block until the
 other side is ready to communicate and implies that the sending and
 receiving of a message occurs simultaneously.
@@ -184,31 +183,32 @@ interact with the files on it.
 
 *** Trade-offs
 
-Using a file interface have various benefits, but some problems
+Using a file interface have several benefits, but some problems
 too.
 
-- Error handling: The network is much more unreliable than local disk
+- Error handling: The network is a lot more unreliable than local disk
   and this can be a source of problems if programmers do not
   understand this correctly. The majority of software does not handle
-  disk failures, does not try to remount the file system if the
+  disk failures and does not try to remount the file system if the
   hardware enter in a failure state, but when using network, failures
   happens all the time and programs needs to be aware of that.
 
-- Framing: Each software in the conversation needs to agree in what it
-  understand of a message. If no convention is used between all of the
-  softwares, then some kind of framing protocol must be used to ensure
-  only complete messages are interpreted. The problem arises from two
-  facts: First, each software can use whatever value it want in the
-  amount of bytes of the read and write syscalls, leading to some
-  programs processing incomplete messages if the amount of bytes
-  disagree. Second, sending bytes over the network link isn't an
-  atomic operation, and for that reason, send/write syscalls for
-  socket commonly returns the amount of bytes completely sent. If the
-  other end cannot identify that the packets received aren't a
-  complete message then it can process corrupt or incomplete data.
+- Framing: Each software in the conversation needs to agree in what is
+  their understanding of a message. If no convention is used between
+  all of the softwares, then some kind of framing protocol must be
+  used to ensure only complete messages are interpreted. The problem
+  arises from two facts: First, each software can use whatever value
+  it want in the amount of bytes of the read and write syscalls,
+  leading to some programs processing incomplete messages if the
+  amount of bytes disagree. Second, sending bytes over the network
+  link isn't an atomic operation, and for that reason, send/write
+  syscalls for socket commonly returns the amount of bytes completely
+  sent. If the other end cannot identify that the packets received
+  aren't a complete message then it can process corrupt or incomplete
+  data.
 
 
-Solution to the problems above are proposed in the section
+Solutions to the problems above are proposed in the section
 [[Implementation][Implementation]].
 
 *** Messaging
@@ -228,9 +228,9 @@ Using a file interface messaging is simpler:
 ** Text messages
 
 Dchan has the principle of being simple and easy to debug. To the
-latter be possible, it's strongly encouraged the use of text-based
-messages instead of binary or compacted text. We'll not optimize for
-performance until we really reach that point.
+latter be possible, is strongly encouraged the use of text-based
+messages instead of binary or compacted text. We'll not optimize it
+for performance until we really reach that point.
 
 Using a text message format we can simplify both the clients and
 server.
@@ -262,8 +262,9 @@ merged with the 'upper' object. @@html:<div
 align="right"><i>@@Neil Brown in [[https://www.kernel.org/doc/Documentation/filesystems/overlayfs.txt][OverlayFS Documentation]].@@html:</i></div>@@
 #+end_quote
 
-Using this concept it's possible to create file trees composed of
-multiple dchan servers without the needs of implementing anything in it.
+Using this concept is possible to create file trees composed of
+multiple dchan servers without the needs of implementing anything on
+it.
 
 
 ** Testing
@@ -272,17 +273,17 @@ Developing a distributed software involves lots of testing because
 failures occurs very frequently. When you build a local software, with
 the entire business logic running at one local memory address space,
 we can ignore the majority of operating system and hardware faults and
-focus only in testing the logic inside the program source code. But
-when the software logic is spread in the network, various classes of
+focus only in testing the logic inside the program's source code. But
+when software's logic is spread in the network, several classes of
 bugs can arises.
 
-On linux, any file system syscall executed on a mounted 9P file system
-that is disconnected from server will result in a -EIO error (Input/Output
+On linux, any file system syscall executed on a disconnected mounted
+9P file system will result in a -EIO error (Input/Output
 error). Applications using dchan should verify the return value of
 read/write functions and, if the value returned is -EIO, then it
-should re-open the file when re-connection with the file server is
-finished. To re-connect, a new mount syscall, establishing a new
-client connection with the file server is required. Linux mount supports the
+should re-open the file when a re-connection with the file server is
+finished. To re-connect, a new mount syscall establishing a new client
+connection with the file server is required. Linux mount supports the
 remount option, enabling then to reuse the mount point already used by
 applications (no need to cwd again to directory). The remount can be
 done explicitly by the application using dchan or by an external
@@ -308,7 +309,7 @@ goroutine for handle the subsequent requests and every created file in
 the tree will spawn 2 other goroutines (one for read and one for write
 requests) and create a channel shared between this two goroutines.
 
-The size of the channel is 0 (unbuffered) by default and it can be
+The size of channels is 0 (unbuffered) by default and it can be
 changed using the ctl file.
 
 Every read request will block Rprocess when the channel is empty. And
@@ -322,15 +323,15 @@ messaging algorithm need to be designed in some way that Wprocess only
 returns to the caller when Rprocess successfully delivered the message
 to the client consumer.
 
-When the channel is unbuffered (with size equals 0), the file server
-*do not* store the messages in any way, only transfer the written data
+When channel is unbuffered (with size equals 0), the file server
+*do not* store the messages in any way, it only transfer the written data
 from the Wprocess to Rprocess, that will then deliver the data
 to the consumer. Dchan is only able to guarantee that data was
 delivered to some consumer in unbuffered mode.
 
 Dchan exposes only one file for settings and metrics. It is called
-**ctl** and remove and change of metadata (wstat) is forbidden on it.
-The system support dynamic change of settings by writing to this file.
+**ctl** and remove or change of metadata (wstat) is forbidden on it.
+The system supports dynamic change of settings by writing to this file.
 Read the file to get the current settings and metrics.
 More information about settings and metrics in the [[Ctl][Ctl]] section.
 
