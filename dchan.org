@@ -1,0 +1,666 @@
+#+TITLE: dchan - distributed channel
+#+AUTHOR: Tiago Natel de Moura
+#+DATE: {{{time(%Y-%m-%d)}}}
+#+LATEX_CLASS: article
+#+LATEX_HEADER: \usepackage{color}
+#+LATEX_HEADER: \usepackage{listings}
+#+LATEX_HEADER: \usepackage{tex/listings-go}
+
+#+STARTUP: overview
+#+TAGS: PROJECT(p)
+#+STARTUP: hidestars
+
+#+begin_latex
+
+\lstset{
+    frame=single,
+    basicstyle=\footnotesize,
+    keywordstyle=\color{red},
+    numbers=left,
+    numbersep=5pt,
+    showstringspaces=false,
+    stringstyle=\color{blue},
+    tabsize=4,
+    language=go
+}
+
+#+end_latex
+
+* dchan
+
+  Dchan is a server that exposes channels for inter-process
+  communications (IPC) over a file tree interface.  These channels are
+  much like Go channels and can be used in the same way but between
+  processes.  Instead of implementing a new protocol for data exchange
+  like AMQP, Dchan uses a simple file interface.  There's no need of
+  client libraries for each language (every language knows how to read
+  and write from files).
+
+  Dchan is able to share those files in the network with the help of
+  the 9P protocol.
+
+  This project uses the concept of [[https://en.wikipedia.org/wiki/Literate_programming][Literate Programming]] of Donald
+  Knuth.
+
+#+BEGIN_QUOTE
+Let us change our traditional attitude to the construction of
+programs: Instead of imagining that our main task is to instruct a
+computer what to do, let us concentrate rather on explaining to human
+beings what we want a computer to do. \cite{Knuth:1984:LiterateProgramming}
+#+END_QUOTE
+
+  This book is the only source for design ideas, code, documentation and
+  tests. From here, we build everything.
+
+** Why dchan?
+   Neoway organizational structure reflects in their software
+architecture (or the other way around?)  and then good communication
+between teams and architectures is a must!  Each team is free to
+choose the IPC technology that makes more sense for the kind of
+problems they're solving, but exists inter-teams communications that
+requires a common protocol. Today we use RabbitMQ service for message
+passing inter-teams and at several places of architecture and this
+proved to be problematic for three reasons.
+
+1. Hard to achieve quality software;
+2. No mechanism to synchronize publishers and consumers;
+3. It doesn't scale;
+
+AMQP (Advanced Message Queue Protocol) is a complex bad designed
+specification protocol and because of that, client libraries are huge
+and sometimes buggy. On top of a huge library, the specification still
+imposes a lot of client code to achieve durability and
+reliability. That big amount of code (and tests) needs to be written
+in the correct manner and must be correctly tested. Testing is hard
+because the need for a central complete broker (not easy to mock with
+libraries) and some way to start/stop the broker for test
+re-connection and guarantees (durability). In simple words: hard to
+achieve good quality code.
+
+For more information about this kind of problems, read the article
+below from one of the AMQP creators:
+
+http://www.imatix.com/articles:whats-wrong-with-amqp/
+
+The second problem is that AMQP does not say any words about
+synchronism between publishers and consumers of queues, and the broker
+is designed to be a complete database to store the difference between
+throughput of clients. Sometimes this is a desired behavior, but
+sometimes it is not. If you have a low traffic messaging, it works,
+but using the message broker as a database for a large dataset
+processing requires more database capabilities in the broker than
+messaging (and AMQP is a messaging protocol).
+
+The third problem is a consequence of the the second problem.
+
+** Desired goals
+
+Dchan have the goals below:
+
+- It must have a simple API;
+- It must support text messages over the wire;
+- It must support composability or inter-dchan communications;
+- It must support unicast and multicast;
+- It must be easy for testing;
+- It must scale;
+
+** API
+
+To achieve the first goal dchan uses a file tree interface over
+network. Simple files (real disk files) aren't suitable for IPC
+because of the global nature of the disk incurring races in concurrent
+access between processes. But UNIX operating systems supports the idea
+of virtual file systems (VFS), an abstraction layer on top of a more
+concrete file system, to make possible client application's
+interact with different kind of concrete file systems in a uniform
+way. In practical, VFS is a kernel interface (or contract) to file
+system drivers.
+
+On linux, every file system driver implements the VFS contract, and
+then it's possible to every program that read and write on files to
+use any file system without code changes. It's good because old tools
+like cat, sed, tail, and so on, can be used for network file systems
+without changes. The VFS is useful to build stackable (or union fs
+mounts) file systems and this will be explained in the [[Composability][Composability]]
+section.
+
+Network file systems are a class of file systems that (commonly) map
+userspace IO operations into remote procedure calls, turning possible
+interact with remote resources as if it were local. NFS (Network File
+System) and 9P works this way, the former being a very complex
+protocol commonly used with kernel drivers on client and server side,
+but the latter being very simple, allowing userspace file servers. For
+9P exists tons of libraries for various programming languages to
+develop clients and servers. For NFS exists only one server side
+implementation in userspace and no library for creating new file
+servers.
+
+Dchan uses the 9P as network file system protocol behind the
+scenes. This mean that you can mount the dchan file-tree
+locally and interact with channels as if it were simple files in the
+mounted directory.
+
+Linux kernel have native support in the kernel to create 9P clients
+(not servers), making easy to mount dchan file trees in each linux box.
+
+For more information on 9P implementation see the link below:
+
+http://9p.cat-v.org/implementations
+
+*** CSP Communication Semantics
+
+Dchan uses the Communicating Sequential Processing semantics on top of
+the virtual file interface. At core of the CSP semantics are two
+fundamental ideas:
+
+- Atomic communication
+- Non-deterministic choice.
+
+It's the same concepts as independently defined by Robin Milner in the
+Calculus of Communicating Systems (CCS)[fn:1].
+
+*** Atomic communication
+
+Atomic communication is obtained by rendezvous points. Rendezvous
+points are places in time and space, where processes who are trying to
+communicate, meet each other in order to occur the communication. During
+rendezvous both the sender and receiver processes block until the
+other side is ready to communicate and implies that the sending and
+receiving of a message occurs simultaneously.
+
+#+BEGIN_QUOTE
+A real world analogy to rendezvous can be found in telephone
+communications (without answering machines). Both the caller and
+callee must be simultaneously present for a phone conversation to
+occur.
+Neil Smith at [[http://ptolemy.eecs.berkeley.edu/papers/99/HMAD/html/csp.html][CSP Domain]]
+#+END_QUOTE
+
+The image below shows the communication between Process A and B. At
+some moment in time Process A blocks in the Send call because of
+Process B isn't ready to communicate. When Process B calls Recv, the
+communication happens, data is transferred from Process A to B and
+Process A finally unblock and continue execution.
+
+#+BEGIN_SRC ditaa :file images/rendezvous.png
+
+
+    Progress       Process A                  Process B
+       |               *                          *
+       |               |                          |
+       |               |                          |
+       |               V                          |
+       |        Send(chan, val)                   |
+       |             -----                        |
+       |               ^                          |
+       |       Blocked |                          V
+       |               V     Data transfer  Recv(chan, val)
+       |             -----  <------------->     -----
+       |               |                          |
+       |               |                          |
+       |               |                          |
+       V               V                          V
+
+
+#+END_SRC
+
+#+RESULTS:
+[[file:images/rendezvous.png]]
+
+Depending on the CSP implementation, channels can be buffered, in
+other words, in this way it's a queue with limited size. But
+independently of channel type, the following is true:
+
+#+BEGIN_QUOTE
+Senders will block when channel is full and receivers will block when
+channel is empty.  The communication is atomic only when the channel
+is unbuffered.
+#+END_QUOTE
+
+Then, when the channel is unbuffered, senders will always block
+waiting for a receivers and receivers will always block waiting for a
+sender.
+
+*** Non-deterministic choice
+
+Non-deterministic choice provides processes with the ability to
+randomly select between a set of possible atomic communications. In
+the Go programming language the construct for this is called
+"select"[fn:3], other languages call it "alt". Select statements
+choose which of a set of possible send or receive operations will
+proceed and is very useful when dealing with more than 1 channel per
+process.
+
+*** Dchan CSP semantics
+
+Dchan supports atomic communications and it is guaranteed to be atomic
+across the network with the help of the 9P file abstraction.
+
+Non-deterministic choice, in the other hand, is a much more complex
+task to implement in distributed way and escapes from the file
+semantics. The problem arises from the fact that it requires a special
+API to "mark" a set of channels to participate in the "select", but
+the most closest file's syscall to achieve this transparently are
+select/poll/epoll, but they doesn't map to any 9P message in the
+protocol. Dchan doesn't support "select", but apart from being complex
+to implement and requiring an API, it could be implemented in the
+future.
+
+*** Client interface
+
+To mount a new dchan file server is required only few commands.
+On a stock linux kernel, what you need to type is:
+
+#+begin_src bash
+mkdir -p /n/dchan
+mount -t 9p -o port=6666,dfltuid=`id -u`,dfltgid=`id -g` \
+    192.168.10.56 /n/dchan <ip-of-dchan-server> /n/dchan
+#+end_src
+
+The mount command above will use the linux kernel to establish a new
+client connection to the file server. Once established, the kernel
+will present the remote file system in the /n/dchan directory. After
+that you can use traditional unix tools (file, cat, sed, etc) to
+interact with the files on it.
+
+*** Trade-offs
+
+Using a file interface have several benefits, but some problems
+too.
+
+- Error handling: The network is a lot more unreliable than local disk
+  and this can be a source of problems if programmers do not
+  understand this correctly. The majority of software does not handle
+  disk failures and does not try to remount the file system if the
+  hardware enter in a failure state, but when using network, failures
+  happens all the time and programs needs to be aware of that.
+
+- Framing: Each software in the conversation needs to agree in what is
+  their understanding of a message. If no convention is used between
+  all of the softwares, then some kind of framing protocol must be
+  used to ensure only complete messages are interpreted. The problem
+  arises from two facts: First, each software can use whatever value
+  it want in the amount of bytes of the read and write syscalls,
+  leading to some programs processing incomplete messages if the
+  amount of bytes disagree. Second, sending bytes over the network
+  link isn't an atomic operation, and for that reason, send/write
+  syscalls for socket commonly returns the amount of bytes completely
+  sent. If the other end cannot identify that the packets received
+  aren't a complete message then it can process corrupt or incomplete
+  data.
+
+
+Solutions to the problems above are proposed in the section
+[[Implementation][Implementation]].
+
+*** Messaging
+
+Using a file interface messaging is simpler:
+
+| syscall      | dchan semantics / effect     |
+|--------------+------------------------------|
+| open         | Open an existing channel     |
+| open(OCREAT) | Create a new channel         |
+| read         | Read messages from channel   |
+| write        | Write a message into channel |
+| stat         | Get info of channel          |
+| close        | Close the channel            |
+| unlink       | Remove an existing channel   |
+
+** Text messages
+
+Dchan has the principle of being simple and easy to debug. To the
+latter be possible, is strongly encouraged the use of text-based
+messages instead of binary or compacted text. We'll not optimize it
+for performance until we really reach that point.
+
+Using a text message format we can simplify both the clients and
+server.
+
+- No need for libraries to encode/decode messages;
+- Easy to debug in the network;
+- Easy to testing;
+
+** Composability
+
+It's possible to create a virtual file system representation of
+multiple dchan file servers. It's useful for inter-teams
+communications without the need of using a central dchan server.
+This feature is given by union file system capabilities of the
+Operating System.
+
+The Linux and BSD kernels supports various flavours of union file
+system drivers, but this section will demonstrate the use of the most
+recent union file system of the Linux Kernel called `overlayfs`.
+
+From Linux documentation:
+
+#+begin_quote
+An overlay filesystem combines two filesystems - an 'upper' filesystem
+and a 'lower' filesystem.  When a name exists in both filesystems, the
+object in the 'upper' filesystem is visible while the object in the
+'lower' filesystem is either hidden or, in the case of directories,
+merged with the 'upper' object. @@html:<div
+align="right"><i>@@Neil Brown in [[https://www.kernel.org/doc/Documentation/filesystems/overlayfs.txt][OverlayFS Documentation]].@@html:</i></div>@@
+#+end_quote
+
+Using this concept is possible to create file trees composed of
+multiple dchan servers without the needs of implementing anything on
+it.
+
+
+** Testing
+
+Developing a distributed software involves lots of testing because
+failures occurs very frequently. When you build a local software, with
+the entire business logic running at one local memory address space,
+we can ignore the majority of operating system and hardware faults and
+focus only in testing the logic inside the program's source code. But
+when software's logic is spread in the network, several classes of
+bugs can arises.
+
+On linux, any file system syscall executed on a disconnected mounted
+9P file system will result in a -EIO error (Input/Output
+error). Applications using dchan should verify the return value of
+read/write functions and, if the value returned is -EIO, then it
+should re-open the file when a re-connection with the file server is
+finished. To re-connect, a new mount syscall establishing a new client
+connection with the file server is required. Linux mount supports the
+remount option, enabling then to reuse the mount point already used by
+applications (no need to cwd again to directory). The remount can be
+done explicitly by the application using dchan or by an external
+software. This topic will be more detailed in the section [[dchan-proxy][dchan-proxy]].
+
+** Terminology
+
+This document uses a number of terms to refer to the roles played by
+participants in, and objects of, the Dchan communication.
+
+- goroutine: Go lightweight threads that represent anonymous processes
+  in the CSP terminology.
+- channel: Entity shared between processes whose purpose is to provide
+  means of communication.
+- Rprocess: Reader goroutine of a read 9P request.
+- Wprocess: Writer goroutine of a write 9P request.
+
+** Architecture
+
+Dchan is a file server that exposes the Go channels with a file tree
+interface. Every new 9P connection established will create a new
+goroutine for handle the subsequent requests and every created file in
+the tree will spawn 2 other goroutines (one for read and one for write
+requests) and create a channel shared between this two goroutines.
+
+The size of channels is 0 (unbuffered) by default and it can be
+changed using the ctl file.
+
+Every read request will block Rprocess when the channel is empty. And
+every write request will block the Wprocess when the channel is
+full. When the channel is unbuffered, the communication is atomic
+inside Dchan, as stated by CSP concepts explained in the chapter [[CSP Communication Semantics][CSP
+Communication Semantics]].
+
+To guarantee the atomicity of the messaging across Dchan clients the
+messaging algorithm need to be designed in some way that Wprocess only
+returns to the caller when Rprocess successfully delivered the message
+to the client consumer.
+
+When channel is unbuffered (with size equals 0), the file server
+*do not* store the messages in any way, it only transfer the written data
+from the Wprocess to Rprocess, that will then deliver the data
+to the consumer. Dchan is only able to guarantee that data was
+delivered to some consumer in unbuffered mode.
+
+Dchan exposes only one file for settings and metrics. It is called
+**ctl** and remove or change of metadata (wstat) is forbidden on it.
+The system supports dynamic change of settings by writing to this file.
+Read the file to get the current settings and metrics.
+More information about settings and metrics in the [[Ctl][Ctl]] section.
+
+Dchan-proxy is a local unix socket server created to simplify client
+applications avoiding other semantics related to network connection.
+The linux kernel will establish a 9P connection to dchan-proxy for
+each application, and dchan-proxy will establish a 9P connection over
+TCP with dchan. Dchan-proxy is designed for block in the file's
+syscalls in case of network partitions until re-connection finishes. It
+stores the state of call and re-apply when re-connected. This way,
+client applications will never know that something bad occurred in the
+network (except that some syscalls like read blocked for a long
+time).
+
+** Ctl
+
+
+** Building
+
+To build the software you can execute:
+
+#+NAME: building
+#+CAPTION: building
+#+BEGIN_SRC bash
+make
+#+END_SRC
+
+
+** Development
+
+As stated before, Dchan is a literate program, then this document is
+all you need to understand all of it's concepts, design choices,
+and get the source code.
+
+It was developed using [[http://orgmode.org/][orgmode]], but isn't required to use emacs to
+build or contribute to the project. The project is composed of org
+files and a full featured Makefile. The Makefile have all of the
+commands you need to generate the book on various formats, extract the
+source code, build the software, execute tests, and so on.
+
+If you use Emacs editor, you don't need this Makefile at all, because
+orgmode is full integrated.
+
+For non-emacs developers, the development process is:
+
+1. Change org files;
+2. Run make
+
+*Never touch the generated source code.*
+
+** Dependencies
+
+- Org dependency
+
+If you use Emacs, everything is already installed.
+
+For non-emacs developers, install [[https://github.com/fniessen/orgmk][orgmk]].
+
+- Go
+
+Read the [[https://golang.org/doc/install][Go Getting started]] tutorial.
+
+** Implementation
+
+*** dchan-proxy
+
+*** Makefile
+
+First of all, we need a Makefile to build this document and source
+code.
+
+The most used commands are:
+
+- **make** to make a full rebuild of everything.
+- **make tangle** to extract source code
+- **make build** to build dchan software
+
+#+BEGIN_SRC make :tangle Makefile :comments link
+
+### -*- Makefile -*- Dchan build options
+
+# To install `dchan', type `make' and then `make install'.
+
+BIN_DIR=/usr/local/bin
+ORG_FILE=dchan.org
+BIB_FILE=dchan
+
+.PHONY: all build test clean doc
+
+all: clean tangle build test doc
+	@echo "build successfully"
+
+tangle:
+	org-tangle $(ORG_FILE)
+
+build:
+	go build -v
+
+test:
+	go test -v ./...
+
+install:
+	cp dchan $(BIN_DIR)
+
+clean:
+	-rm dchan *.tex *.pdf *.html *.go *.txt *~
+
+doc:
+	-org2pdf $(ORG_FILE)
+	pdflatex dchan.tex
+	bibtex dchan
+	pdflatex dchan.tex
+	pdflatex dchan.tex
+
+
+#+END_SRC
+
+*** Main module
+
+Main is the module responsible to parse the command-line arguments and
+initialize the 9P file server.
+
+#+NAME: src|main.go
+#+BEGIN_SRC go :tangle main.go :noweb true
+package main
+
+import (
+	"errors"
+	"flag"
+	"fmt"
+	"log"
+	"os"
+
+	"github.com/lionkov/go9p/p"
+	"github.com/lionkov/go9p/p/srv"
+)
+
+type DchanFile struct {
+	srv.File
+	id int
+}
+
+type Dchan struct {
+	srv.File
+}
+
+var addr = flag.String("addr", ":6666", "network address")
+var debug = flag.Bool("d", false, "print debug messages")
+
+var root *srv.File
+
+func (file *DchanFile) Read(fid *srv.FFid, buf []byte, offset uint64) (int, error) {
+	b := []byte("hacked by i4k")
+	n := len(b)
+
+	if offset >= uint64(n) {
+		return 0, nil
+	}
+
+	b = b[int(offset):n]
+	n -= int(offset)
+	if len(buf) < n {
+		n = len(buf)
+	}
+
+	copy(buf[offset:int(offset)+n], b[offset:])
+	return n, nil
+}
+
+func (file *DchanFile) Write(fid *srv.FFid, data []byte, offset uint64) (int, error) {
+	return 0, errors.New("permission denied")
+}
+
+func (file *DchanFile) Wstat(fid *srv.FFid, dir *p.Dir) error {
+	return nil
+}
+
+func (file *DchanFile) Remove(fid *srv.FFid) error {
+	return nil
+}
+
+func main() {
+	var err error
+	var ctl *DchanFile
+	var s *srv.Fsrv
+
+	flag.Parse()
+	user := p.OsUsers.Uid2User(os.Geteuid())
+	root = new(srv.File)
+	err = root.Add(nil, "/", user, nil, p.DMDIR|0777, nil)
+	if err != nil {
+		goto error
+	}
+
+	ctl = new(DchanFile)
+	err = ctl.Add(root, "ctl", p.OsUsers.Uid2User(os.Geteuid()), nil, 0444, ctl)
+	if err != nil {
+		goto error
+	}
+
+	s = srv.NewFileSrv(root)
+	s.Dotu = true
+
+	if *debug {
+		s.Debuglevel = 1
+	}
+
+	s.Start(s)
+	err = s.StartNetListener("tcp", *addr)
+	if err != nil {
+		goto error
+	}
+	return
+
+error:
+	log.Println(fmt.Sprintf("Error: %s", err))
+}
+#+END_SRC
+
+#+RESULTS: src|main.go
+
+
+** Test cases
+
+*** Network partitions
+
+Network partition is the most frequent problem that can affect
+Dchan. There's some cases that needs to be covered in order to achieve
+reliability in the exchange of messages.
+
+
+
+| Description | steps of events |   |   |   |
+|-------------+-----------------+---+---+---|
+|             |                 |   |   |   |
+
+
+* Bibliography
+\bibliographystyle{plainnat}
+\bibliography{./dchan}
+
+
+* Footnotes
+
+[fn:1] R. Milner, "A Calculus of Communicating Systems", Lecture Notes
+in Computer Science, Vol. 92, Springer-Verlag, 1980.
+
+[fn:2] Ptolemy II: http://ptolemy.eecs.berkeley.edu/papers/99/HMAD/html/csp.html
+
+[fn:3] https://golang.org/ref/spec\#Select_statements

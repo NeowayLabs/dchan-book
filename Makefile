@@ -1,0 +1,36 @@
+# [[file:dchan.org::*Makefile][Makefile:1]]
+### -*- Makefile -*- Dchan build options
+
+# To install `dchan', type `make' and then `make install'.
+
+BIN_DIR=/usr/local/bin
+ORG_FILE=dchan.org
+BIB_FILE=dchan
+
+.PHONY: all build test clean doc
+
+all: clean tangle build test doc
+	@echo "build successfully"
+
+tangle:
+	org-tangle $(ORG_FILE)
+
+build:
+	go build -v
+
+test:
+	go test -v ./...
+
+install:
+	cp dchan $(BIN_DIR)
+
+clean:
+	-rm dchan *.tex *.pdf *.html *.go *.txt *~
+
+doc:
+	-org2pdf $(ORG_FILE)
+	pdflatex dchan.tex
+	bibtex dchan
+	pdflatex dchan.tex
+	pdflatex dchan.tex
+# Makefile:1 ends here
