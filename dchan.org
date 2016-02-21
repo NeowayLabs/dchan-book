@@ -2,13 +2,29 @@
 #+AUTHOR: Tiago Natel de Moura
 #+DATE: {{{time(%Y-%m-%d)}}}
 #+LATEX_CLASS: article
-#+LATEX_CLASS_OPTIONS: [12pt]
+#+LATEX_HEADER: \usepackage{color}
 #+LATEX_HEADER: \usepackage{listings}
 #+LATEX_HEADER: \usepackage{tex/listings-go}
 
 #+STARTUP: overview
 #+TAGS: PROJECT(p)
 #+STARTUP: hidestars
+
+#+begin_latex
+
+\lstset{
+    frame=single,
+    basicstyle=\footnotesize,
+    keywordstyle=\color{red},
+    numbers=left,
+    numbersep=5pt,
+    showstringspaces=false,
+    stringstyle=\color{blue},
+    tabsize=4,
+    language=go
+}
+
+#+end_latex
 
 * dchan
 
@@ -475,7 +491,7 @@ The most used commands are:
 - **make tangle** to extract source code
 - **make build** to build dchan software
 
-#+BEGIN_SRC make :tangle Makefile
+#+BEGIN_SRC make :tangle Makefile :comments link
 
 ### -*- Makefile -*- Dchan build options
 
@@ -515,7 +531,7 @@ doc:
 
 #+END_SRC
 
-**** Main module
+*** Main module
 
 Main is the module responsible to parse the command-line arguments and
 initialize the 9P file server.
