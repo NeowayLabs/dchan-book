@@ -9,22 +9,22 @@ ORG_FILE=dchan.org
 .PHONY: all build test clean doc
 
 all: clean tangle build test doc
-	@echo "build successfully"
+        @echo "build successfully"
 
 tangle:
-	org-tangle main.go
+        org-tangle $(ORG_FILE)
 
 build:
-	go build -v
+        go build -v
 
 test:
-	go test -v ./...
+        go test -v ./...
 
 install:
-	cp dchan $(BIN_DIR)
+        cp dchan $(BIN_DIR)
 
 clean:
-	-rm dchan *.tex *.pdf *.html *.go *.txt *~
+        -rm dchan *.tex *.pdf *.html *.go *.txt *~
 
 doc:
-	org2pdf dchan.org
+        org2pdf $(ORG_FILE)
