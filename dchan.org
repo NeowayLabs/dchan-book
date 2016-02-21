@@ -1,5 +1,11 @@
 #+TITLE: dchan - distributed channel
 #+AUTHOR: Tiago Natel de Moura
+#+DATE: {{{time(%Y-%m-%d)}}}
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS: [12pt]
+#+LATEX_HEADER: \usepackage{listings}
+#+LATEX_HEADER: \usepackage{tex/listings-go}
+
 #+STARTUP: overview
 #+TAGS: PROJECT(p)
 #+STARTUP: hidestars
@@ -24,9 +30,7 @@
 Let us change our traditional attitude to the construction of
 programs: Instead of imagining that our main task is to instruct a
 computer what to do, let us concentrate rather on explaining to human
-beings what we want a computer to do.  @@html:<div
-align="right"><i>@@Donald Knuth - Literate Programming
-(1984).@@html:</i></div>@@
+beings what we want a computer to do. \cite{Knuth:1984:LiterateProgramming}
 #+END_QUOTE
 
   This book is the only source for design ideas, code, documentation and
@@ -417,7 +421,7 @@ To build the software you can execute:
 
 #+NAME: building
 #+CAPTION: building
-#+BEGIN_SRC shell
+#+BEGIN_SRC bash
 make
 #+END_SRC
 
@@ -471,7 +475,7 @@ The most used commands are:
 - **make tangle** to extract source code
 - **make build** to build dchan software
 
-#+BEGIN_SRC makefile :tangle Makefile
+#+BEGIN_SRC make :tangle Makefile
 
 ### -*- Makefile -*- Dchan build options
 
@@ -479,6 +483,7 @@ The most used commands are:
 
 BIN_DIR=/usr/local/bin
 ORG_FILE=dchan.org
+BIB_FILE=dchan
 
 .PHONY: all build test clean doc
 
@@ -501,7 +506,13 @@ clean:
 	-rm dchan *.tex *.pdf *.html *.go *.txt *~
 
 doc:
-	org2pdf $(ORG_FILE)
+	-org2pdf $(ORG_FILE)
+	pdflatex dchan.tex
+	bibtex dchan
+	pdflatex dchan.tex
+	pdflatex dchan.tex
+
+
 #+END_SRC
 
 **** Main module
@@ -622,6 +633,12 @@ reliability in the exchange of messages.
 | Description | steps of events |   |   |   |
 |-------------+-----------------+---+---+---|
 |             |                 |   |   |   |
+
+
+* Bibliography
+\bibliographystyle{plainnat}
+\bibliography{./dchan}
+
 
 * Footnotes
 

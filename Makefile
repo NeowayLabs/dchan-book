@@ -5,6 +5,7 @@
 
 BIN_DIR=/usr/local/bin
 ORG_FILE=dchan.org
+BIB_FILE=dchan
 
 .PHONY: all build test clean doc
 
@@ -27,4 +28,8 @@ clean:
         -rm dchan *.tex *.pdf *.html *.go *.txt *~
 
 doc:
-        org2pdf $(ORG_FILE)
+        -org2pdf $(ORG_FILE)
+        pdflatex dchan.tex
+        bibtex dchan
+        pdflatex dchan.tex
+        pdflatex dchan.tex
