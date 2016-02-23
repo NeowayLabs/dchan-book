@@ -1,36 +1,72 @@
-# [[file:dchan.org::*Makefile][Makefile:1]]
-### -*- Makefile -*- Dchan build options
+
+# [[file:~/projects/go-workspace/src/gitlab.neoway.com.br/tiago.natel/dchan/dchan.org::*Makefile][Makefile:1]]
+
+# A generic orgmode Makefile, by Todd Lewis <tlewis@brickabode.com>
+# 23 February 2016
+# This document is released to the public domain, though with no
+# warranties; use at your own risk
+
+.PHONY: build
+
 
 # To install `dchan', type `make' and then `make install'.
-
 BIN_DIR=/usr/local/bin
-ORG_FILE=dchan.org
-BIB_FILE=dchan
+OBJ=dchan
+DOC_SRCS=$(wildcard *.org)
+HTMLS=$(patsubst %.org,%.html,$(DOC_SRCS))
+TXTS=$(patsubst %.org,%.txt,$(DOC_SRCS))
+PDFS=$(patsubst %.org,%.pdf,$(DOC_SRCS))
 
-.PHONY: all build test clean doc
+all: clean $(OBJ) $(HTMLS) $(TXTS) $(PDFS)
 
-all: clean tangle build test doc
-	@echo "build successfully"
+clean-latex:
+	rm -f *.blg *.bbl *.tex *.odt *.toc *.out *.aux
 
-tangle:
-	org-tangle $(ORG_FILE)
+clean-source:
+	rm -f *.go
 
-build:
-	go build -v
+clean: clean-latex clean-source
+	rm -f *.png
+	rm -f *.txt *.html *.pdf *.odt
+	rm -f *.log
 
-test:
-	go test -v ./...
+%.html: %.org
+	org2html $<
 
-install:
-	cp dchan $(BIN_DIR)
+%.txt: %.org
+	org2txt  $<
 
-clean:
-	-rm dchan *.tex *.pdf *.html *.go *.txt *~
-
-doc:
-	-org2pdf $(ORG_FILE)
-	pdflatex dchan.tex
+%.pdf: %.org
+	org2pdf $<
+	-pdflatex dchan.tex
 	bibtex dchan
 	pdflatex dchan.tex
 	pdflatex dchan.tex
+
+tangle: $(DOC_SRCS)
+	org-tangle $<
+
+build: $(OBJ)
+doc: $(HTMLS) $(PDFS) $(TXTS)
+
+$(OBJ): tangle
+	go build -v
+
+test: tangle
+	go test -v ./...
+
+install:
+	cp $(OBJ) $(BIN_DIR)
+
+
+# To include an automatic version number in your file, use a header like this:
+#
+#+OPTIONS: VERSION:$Version: $
+#
+# Then you can use this rule to automatically update it;
+# to update file foo.org, just do "make foo.version".
+
+%.version: %.org
+	(ver=`date +%s`; cat $< | sed 's/\$$Version:[^$$]*\$$/$$Version: '$$ver' $$/g' > .version-$$ver && mv .version-$$ver $< && echo Versioned $<)
+
 # Makefile:1 ends here
