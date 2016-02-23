@@ -417,19 +417,71 @@ The system supports dynamic change of settings by writing to this file.
 Read the file to get the current settings and metrics.
 More information about settings and metrics in the [[Ctl][Ctl]] section.
 
-Dchan-proxy is a local unix socket server created to simplify client
-applications avoiding other semantics related to network connection.
-The linux kernel will establish a 9P connection to dchan-proxy for
-each application, and dchan-proxy will establish a 9P connection over
-TCP with dchan. Dchan-proxy is designed for block in the file's
-syscalls in case of network partitions until re-connection finishes. It
-stores the state of call and re-apply when re-connected. This way,
-client applications will never know that something bad occurred in the
-network (except that some syscalls like read blocked for a long
-time).
+Dchan-proxy is a local unix socket 9P server created to simplify
+client applications, avoiding other semantics related to network
+connection in apps trying to communicate.  The linux kernel will
+establish a 9P connection to dchan-proxy for each application, and
+dchan-proxy will establish a 9P connection over TCP with
+dchan. Dchan-proxy will proxy 9P requests to dchan server, but it is
+designed for block the client in the file's syscalls in case of
+network failure with dchan. It stores the state of call and re-apply
+when re-connected. This way, client applications will never know that
+something bad occurred in the network (except that some syscalls like
+read blocked for some time).
 
 * Ctl
 
+Dchan has only one special served file called ctl to manage channel
+metrics and settings.
+
+*** Metrics
+
+The only metrics exposed until now is:
+
+- rx - Receiver rate in messages/second.
+- tx - Transmission rate in messages/second.
+- arx - Average rx.
+- atx - Average tx.
+
+You can get this statistics reading the ctl file, like below:
+
+#+BEGIN_SRC bash
+$ cd /n/dchan
+$ cat ctl
+/core/input    0    25221    25221    25221    25221
+/data/input    256  35002    34255    36222    36025
+
+#+END_SRC
+
+The output format is:
+
+#+BEGIN_SRC
+<filename>    <channel size>    <rx>    <tx>    <arx>    <atx>
+#+END_SRC
+
+The blank separator is TAB.
+
+The metrics are updated each second.
+
+*** Settings
+
+For now, there's only one setting available: channel size.
+
+See below the format to update the channel size for file /data/input:
+
+#+BEGIN_SRC bash
+$ cd /n/dchan
+$ mkdir data
+$ touch data/input
+$ cat ctl
+/data/input    0    0    0    0    0
+$ echo "/data/input 256" >> ctl
+
+#+END_SRC
+
+The size of channel can be updated at any time, but be aware that during
+the update of channel the file operations on this specific file will
+block until finished.
 
 * Building
 
