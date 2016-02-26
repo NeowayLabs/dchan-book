@@ -26,6 +26,8 @@
 
 #+end_latex
 
+
+
 * dchan
 
   Dchan is a server that exposes channels for inter-process
@@ -53,14 +55,31 @@ beings what we want a computer to do. \cite{Knuth:1984:LiterateProgramming}
   tests. From here, we build everything.
 
 ** Why dchan?
-   Neoway organizational structure reflects in their software
-architecture (or the other way around?)  and then good communication
-between teams and architectures is a must!  Each team is free to
-choose the IPC technology that makes more sense for the kind of
-problems they're solving, but exists inter-teams communications that
-requires a common protocol. Today we use RabbitMQ service for message
-passing inter-teams and at several places of architecture and this
-proved to be problematic for three reasons.
+
+#+BEGIN_QUOTE
+/Any organization that designs a system (defined broadly) will produce/
+/a design whose structure is a copy of the organization's/
+/communication structure./ \cite{Conway:1967:HowDoCommitteesInvent}
+#+END_QUOTE
+
+#+BEGIN_QUOTE
+/If you have four groups working on a compiler, you'll get a 4-pass
+compiler./ \cite{Raymond:JargonConwayLaw}
+#+END_QUOTE
+
+A common problem nowadays is inter-process communication not between
+individual processes but between entire different architectures. It's
+a more fundamental problem in Big Data companies, where the software
+is composed of multiple architectures, each one solving one part of
+the problem. For example, the first architecture could be scraping,
+lots of processes (scrapers or web spiders) crawling the internet and
+generating raw data, then processed by parsers, cleaners, etc.
+
+Each team is free to choose the IPC technology that makes more sense
+for the kind of problems they're solving, but exists inter-teams
+communications that requires a common protocol. Today we use RabbitMQ
+service for message passing inter-teams and at several places of
+architecture and this proved to be problematic for three reasons.
 
 1. Hard to achieve quality software;
 2. No mechanism to synchronize publishers and consumers;
@@ -455,9 +474,9 @@ $ cat ctl
 
 The output format is:
 
-#+BEGIN_SRC
+#+BEGIN_EXAMPLE
 <filename>    <channel size>    <rx>    <tx>    <arx>    <atx>
-#+END_SRC
+#+END_EXAMPLE
 
 The blank separator is TAB.
 
@@ -740,6 +759,7 @@ reliability in the exchange of messages.
 
 
 * Bibliography
+
 \bibliographystyle{plainnat}
 \bibliography{./dchan}
 
