@@ -1,0 +1,12 @@
+%% Golang definition for listings
+%% http://github.io/julienc91/lstlistings-golang
+%%
+\RequirePackage{listings}
+
+\lstdefinelanguage{dockerfile}%
+  {morekeywords=[1]{ADD,COPY,ENV,CMD,ENTRYPOINT,FROM,RUN},%
+   sensitive=true,%
+   morecomment=[l]{#},%
+   morestring=[b]',%
+   morestring=[b]",%
+   }

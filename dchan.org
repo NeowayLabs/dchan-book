@@ -1,32 +1,13 @@
 #+TITLE: dchan - distributed channel
 #+AUTHOR: Tiago Natel de Moura
 #+DATE: {{{time(%Y-%m-%d)}}}
-#+LATEX_CLASS: article
-#+LATEX_HEADER: \usepackage{color}
-#+LATEX_HEADER: \usepackage{listings}
-#+LATEX_HEADER: \usepackage{tex/listings-go}
 
 #+STARTUP: overview
 #+TAGS: PROJECT(p)
 #+STARTUP: hidestars
 
-#+begin_latex
 
-\lstset{
-    frame=single,
-    basicstyle=\footnotesize,
-    keywordstyle=\color{red},
-    numbers=left,
-    numbersep=5pt,
-    showstringspaces=false,
-    stringstyle=\color{blue},
-    tabsize=4,
-    language=go
-}
-
-#+end_latex
-
-
+#+INCLUDE: "tex/latex.setup"
 
 * dchan
 
