@@ -86,6 +86,10 @@ beings what we want a computer to do. \cite{Knuth:1984:LiterateProgramming}
    messages, when the memory is over the threshold (See [[https://www.rabbitmq.com/memory.html][here]], [[http://nsq.io/deployment/production.html][here]],
    [[http://redis.io/topics/memory-optimization][here]] and [[https://qpid.apache.org/releases/qpid-0.32/cpp-broker/book/chapter-Managing-CPP-Broker.html][here]]).
 
+   After some time using RabbitMQ, and then studying other solutions,
+   we discovered that majority of current technologies aren't good
+   enought to solve our specific use cases.
+
    The problem is that, when the worker queue grow indefinitely,
    because of slow consumers throughput compared to publishers or
    because some consumers crashed, two things can happen:
