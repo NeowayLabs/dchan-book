@@ -1,0 +1,43 @@
+Dchan is a file server that exposes the Go channels with a file tree
+interface. Every new 9P connection established will create a new
+goroutine for handle the subsequent requests and every created file in
+the tree will spawn 2 other goroutines (one for read and one for write
+requests) and create a channel shared between this two goroutines.
+
+The size of channels is 0 (unbuffered) by default and it can be
+changed using the ctl file.
+
+Every read request will block Rprocess when the channel is empty. And
+every write request will block the Wprocess when the channel is
+full. When the channel is unbuffered, the communication is atomic
+inside Dchan, as stated by CSP concepts explained in the chapter [[CSP Communication Semantics][CSP
+Communication Semantics]].
+
+To guarantee the atomicity of the messaging across Dchan clients the
+messaging algorithm need to be designed in some way that Wprocess only
+returns to the caller when Rprocess successfully delivered the message
+to the client consumer.
+
+When channel is unbuffered (with size equals 0), the file server
+*do not* store the messages in any way, it only transfer the written data
+from the Wprocess to Rprocess, that will then deliver the data
+to the consumer. Dchan is only able to guarantee that data was
+delivered to some consumer in unbuffered mode.
+
+Dchan exposes only one file for settings and metrics. It is called
+**ctl** and remove or change of metadata (wstat) is forbidden on it.
+The system supports dynamic change of settings by writing to this file.
+Read the file to get the current settings and metrics.
+More information about settings and metrics in the [[Ctl][Ctl]] section.
+
+Dchan-proxy is a local unix socket 9P server created to simplify
+client applications, avoiding other semantics related to network
+connection in apps trying to communicate.  The linux kernel will
+establish a 9P connection to dchan-proxy for each application, and
+dchan-proxy will establish a 9P connection over TCP with
+dchan. Dchan-proxy will proxy 9P requests to dchan server, but it is
+designed for block the client in the file's syscalls in case of
+network failure with dchan. It stores the state of call and re-apply
+when re-connected. This way, client applications will never know that
+something bad occurred in the network (except that some syscalls like
+read blocked for some time).
