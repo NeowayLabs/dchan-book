@@ -94,7 +94,7 @@ $(OBJ): tangle
 	cd unix/dchan/ && make
 
 test: tangle
-	go test -v ./...
+	cd unix/dchan/ && make test
 
 install:
 	cp $(OBJ) $(BIN_DIR)

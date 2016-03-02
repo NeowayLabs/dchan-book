@@ -9,7 +9,7 @@ commands you need to generate the book on various formats, extract the
 source code, build the software, execute tests, and so on.
 
 If you use Emacs editor, you don't need this Makefile at all, because
-orgmode is full integrated.
+orgmode is fully integrated.
 
 For non-emacs developers, the development process is:
 
@@ -39,6 +39,61 @@ Read the [[https://golang.org/doc/install][Go Getting started]] tutorial.
 #+BEGIN_SRC makefile :tangle Makefile
 all:
 	go build -v
+
+test:
+	chmod +x tests/acceptance/*.sh
+	./tests/acceptance/vfs.sh
+
+#+END_SRC
+
+** Testing infrastructure
+
+   One of the greatest motivations for create dchan was testing. It's
+   very hard to test messaging nowadays, because of very complex TCP
+   protocols and bigger responsability on the client side to guarantee
+   reliability of the architecture.
+
+   Dchan shall expose a simple testing interface.
+
+   We'll start writing simple tests to verify the contracts
+   established in the [[API][API]] chapter.
+
+   The first tests will verify if dchan exposes a sane filesystem
+   interface. We shall be able to create, delete (unlink), write,
+   read and stat files.
+
+#+BEGIN_SRC sh :tangle tests/acceptance/vfs.sh :shebang #!/bin/bash
+# This functions only test the filesystem interface
+
+set -e
+
+DCHANDIR=/tmp/dchan
+
+function mountdchan {
+    local cwd="$(pwd)"
+    cd ../..
+    make build
+    ./unix/dchan/dchan -addr ":6666" &
+    mkdir /tmp/dchan
+    mount -t 9p -o port=6666 localhost /tmp/dchan
+
+    sleep 1
+
+    cd "${cwd}"
+}
+
+function unmountdchan {
+    umount /tmp/dchan
+    rm -rf /tmp/dchan
+}
+
+function changedir {
+    cd ${DCHANDIR}
+}
+
+mountdchan
+changedir
+unmountdchan
 
 #+END_SRC
 
@@ -70,9 +125,6 @@ type DchanFile struct {
 type Dchan struct {
 	srv.File
 }
-
-
-
 
 var addr = flag.String("addr", ":6666", "network address")
 var debug = flag.Bool("d", false, "print debug messages")

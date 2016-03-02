@@ -1,6 +1,4 @@
-
-# [[file:~/projects/go-workspace/src/gitlab.neoway.com.br/tiago.natel/dchan/dchan.org::*Makefile][Makefile:1]]
-
+# [[file:dchan.org::*Makefile][Makefile:1]]
 # A generic orgmode Makefile, by Todd Lewis <tlewis@brickabode.com>
 # 23 February 2016
 # This document is released to the public domain, though with no
@@ -12,10 +10,11 @@
 # To install `dchan', type `make' and then `make install'.
 BIN_DIR=/usr/local/bin
 OBJ=dchan
-DOC_SRCS=$(wildcard *.org)
-HTMLS=$(patsubst %.org,%.html,$(DOC_SRCS))
-TXTS=$(patsubst %.org,%.txt,$(DOC_SRCS))
-PDFS=$(patsubst %.org,%.pdf,$(DOC_SRCS))
+DOC_BOOK=dchan.org
+DOC_SRCFILES=$(wildcard unix/dchan/*.org)
+HTMLS=$(patsubst %.org,%.html,$(DOC_BOOK))
+TXTS=$(patsubst %.org,%.txt,$(DOC_BOOK))
+PDFS=$(patsubst %.org,%.pdf,$(DOC_BOOK))
 
 all: clean $(OBJ) $(HTMLS) $(TXTS) $(PDFS)
 
@@ -43,17 +42,17 @@ clean: clean-latex clean-source
 	pdflatex dchan.tex
 	pdflatex dchan.tex
 
-tangle: $(DOC_SRCS)
+tangle: $(DOC_SRCFILES)
 	org-tangle $<
 
 build: $(OBJ)
 doc: $(HTMLS) $(PDFS) $(TXTS)
 
 $(OBJ): tangle
-	go build -v
+	cd unix/dchan/ && make
 
 test: tangle
-	go test -v ./...
+	cd unix/dchan/ && make test
 
 install:
 	cp $(OBJ) $(BIN_DIR)
@@ -68,5 +67,4 @@ install:
 
 %.version: %.org
 	(ver=`date +%s`; cat $< | sed 's/\$$Version:[^$$]*\$$/$$Version: '$$ver' $$/g' > .version-$$ver && mv .version-$$ver $< && echo Versioned $<)
-
 # Makefile:1 ends here
