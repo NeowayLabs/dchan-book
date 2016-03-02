@@ -20,7 +20,8 @@ script:
   - cd unix/dchan && go test -v ./...
 #  - goveralls -coverprofile=coverage.txt -service=travis-ci
 before_install:
-  - sudo apt-get install emacs24
+  - sudo apt-get update
+  - sudo apt-get install emacs
   - sudo pip install codecov
 after_success:
   codecov
