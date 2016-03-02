@@ -4,8 +4,6 @@ go:
   - 1.4
   - tip
 install:
-  - cd /tmp && git clone https://github.com/fniessen/orgmk
-  - cd /tmp/orgmk && make && make install
   - cd $HOME/gopath/src/github.com/NeowayLabs/dchan
   - make tangle
   - go get -d -v ./unix/dchan/...
@@ -23,6 +21,8 @@ before_install:
   - sudo apt-get update
   - sudo apt-get install emacs
   - sudo pip install codecov
+  - cd /tmp && git clone https://github.com/fniessen/orgmk
+  - cd /tmp/orgmk && make && sudo make install
 after_success:
   codecov
 notifications:
