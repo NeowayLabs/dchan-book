@@ -4,6 +4,8 @@ go:
   - 1.4
   - tip
 install:
+  - cd /tmp && git clone https://github.com/fniessen/orgmk
+  - cd /tmp/orgmk && make && make install
   - cd $HOME/gopath/src/github.com/NeowayLabs/dchan
   - make tangle
   - go get -d -v ./unix/dchan/...
@@ -18,7 +20,8 @@ script:
   - cd unix/dchan && go test -v ./...
 #  - goveralls -coverprofile=coverage.txt -service=travis-ci
 before_install:
-  sudo pip install codecov
+  - sudo apt-get install emacs24
+  - sudo pip install codecov
 after_success:
   codecov
 notifications:
