@@ -4,7 +4,7 @@
 # This document is released to the public domain, though with no
 # warranties; use at your own risk
 
-.PHONY: build
+.PHONY: build clean clean-source clean-latex
 
 
 # To install `dchan', type `make' and then `make install'.
@@ -22,10 +22,10 @@ clean-latex:
 	rm -f *.blg *.bbl *.tex *.odt *.toc *.out *.aux
 
 clean-source:
-	rm -f *.go
+	cd unix/dchan/ && make clean
 
-clean: clean-latex clean-source
-	rm -f *.png
+clean: tangle clean-latex clean-source
+	rm -f *.pngt
 	rm -f *.txt *.html *.pdf *.odt
 	rm -f *.log
 
