@@ -34,7 +34,35 @@ beings what we want a computer to do. \cite{Knuth:1984:LiterateProgramming}
    pipes, that works very well when all programs share the same
    address space. For distributed architectures, a more elaborate
    solution must be used to perform message passing between different
-   machines. Below are some common used technologies:
+   machines.
+
+   After some time using RabbitMQ, and then studying other solutions,
+   we discovered that majority of current technologies aren't good
+   enough to solve our specific use cases.
+
+   The problem is that, when the worker queue grow indefinitely,
+   because of slow consumers throughput compared to publishers or
+   because some consumers crashed, two things can happen:
+
+   - Memory starvation (in case of no persistence)
+   - Abruptly performance degradation
+
+   In a high volume data processing, the difference of throughput
+   between publishers and consumers can lead to lots of terabytes
+   waiting to be processed if not properly handled.
+
+   Dchan is an alternative to current brokered solutions but providing
+   ad-hoc synchronization. Dchan helps micro-services to communicate
+   transparently. It's much like a rendezvous point in your network,
+   where different services met in order to exchange data directly (no
+   need to store messages in-fly). Dchan uses the CSP (Communicating
+   Sequential Processes) style of concurrency to create channels of
+   data, enabling direct inter-process communication without requiring
+   service discovery.
+
+** Alternative technologies
+
+   Below are some common used technologies for stream processing:
 
    - Broker (message oriented middlewares)
      - AMQP
@@ -74,21 +102,6 @@ beings what we want a computer to do. \cite{Knuth:1984:LiterateProgramming}
    watermark configuration, to activate persistence, or drop new
    messages, when the memory is over the threshold (See [[https://www.rabbitmq.com/memory.html][here]], [[http://nsq.io/deployment/production.html][here]],
    [[http://redis.io/topics/memory-optimization][here]] and [[https://qpid.apache.org/releases/qpid-0.32/cpp-broker/book/chapter-Managing-CPP-Broker.html][here]]).
-
-   After some time using RabbitMQ, and then studying other solutions,
-   we discovered that majority of current technologies aren't good
-   enought to solve our specific use cases.
-
-   The problem is that, when the worker queue grow indefinitely,
-   because of slow consumers throughput compared to publishers or
-   because some consumers crashed, two things can happen:
-
-   - Memory starvation (in case of no persistence)
-   - Abruptly performance degradation
-
-   In a high volume data processing, the difference of throughput
-   between publishers and consumers can lead to lots of terabytes
-   waiting to be processed if not properly handled.
 
    The entire application being down because of OOM in the broker
    isn't a good option for data processing, then NATS doesn't
@@ -138,14 +151,6 @@ beings what we want a computer to do. \cite{Knuth:1984:LiterateProgramming}
    required synchronism and avoid infinite queues, but this requires
    additional [[http://hintjens.com/blog:32][service discovery capabilities to every micro-service of the
    architecture]].
-
-   Dchan is an alternative to the brokered solutions but providing
-   ad-hoc synchronization. Dchan helps micro-services to communicate
-   transparently. It's much like a rendezvous point in your network,
-   where different services met in order to exchange data
-   directly. Dchan uses the CSP (Communicating Sequential Processes)
-   style of concurrency to create channels of data, enabling direct
-   inter-process communication without requiring service discovery.
 
 ** Current situation
 
