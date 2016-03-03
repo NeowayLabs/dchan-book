@@ -18,7 +18,7 @@ script:
   - cd unix/dchan && go test -v ./...
 #  - goveralls -coverprofile=coverage.txt -service=travis-ci
 before_install:
-  - sudo add-apt-repository ppa:cassou/emacs
+  - sudo add-apt-repository ppa:cassou/emacs -y
   - sudo apt-get update
   - sudo apt-get install emacs24
   - sudo pip install codecov
