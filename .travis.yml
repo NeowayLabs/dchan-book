@@ -19,8 +19,8 @@ script:
 #  - goveralls -coverprofile=coverage.txt -service=travis-ci
 before_install:
   - sudo add-apt-repository ppa:ubuntu-elisp/ppa -y
-  - sudo apt-get update
-  - sudo apt-get install emacs24
+  - sudo apt-get update -qq
+  - sudo apt-get install --force-yes emacs24
   - sudo pip install codecov
   - cd /tmp && git clone https://github.com/fniessen/orgmk
   - cd /tmp/orgmk && make && sudo make install
