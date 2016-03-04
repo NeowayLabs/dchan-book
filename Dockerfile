@@ -2,11 +2,9 @@ FROM golang:1.5
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+ADD sources.list /etc/apt/sources.list
 RUN apt-get update -qq
-RUN apt-get install -qq --force-yes software-properties-common && \
-    add-apt-repository ppa:ubuntu-elisp/ppa -y && \
-    apt-get update -qq && \
-    apt-get install -qq --force-yes emacs24
+RUN apt-get install -qq --force-yes emacs24
 
 RUN cd /tmp && git clone https://github.com/fniessen/orgmk && \
     cd orgmk && make && make install
