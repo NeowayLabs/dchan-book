@@ -1,6 +1,10 @@
 #+TITLE: dchan - distributed channel
 #+AUTHOR: Tiago Natel de Moura
+#+EMAIL: tiago4orion@gmail.com
 #+DATE: {{{time(%Y-%m-%d)}}}
+#+DESCRIPTION: Dchan is a distributed CSP channel
+#+KEYWORDS: dchan, CSP, go, golang, distributed, stream-processing, queue
+#+LANGUAGE: en
 
 #+STARTUP: overview
 #+TAGS: PROJECT(p)
