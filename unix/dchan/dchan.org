@@ -37,10 +37,15 @@ Read the [[https://golang.org/doc/install][Go Getting started]] tutorial.
 ** Source Makefile
 
 #+BEGIN_SRC makefile :tangle Makefile
-all:
+all: clean tangle build test
+
+tangle:
+	org-tangle dchan.org
+
+build: tangle
 	go build -v
 
-test: all
+test: tangle build
 	chmod +x tests/acceptance/*.sh
 	./tests/acceptance/vfs.sh
 
