@@ -18,10 +18,8 @@ script:
   - cd unix/dchan && go test -v ./...
 #  - goveralls -coverprofile=coverage.txt -service=travis-ci
 before_install:
-  - sudo su -c 'echo "deb http://ch.archive.ubuntu.com/ubuntu/ saucy
-  main restricted" >> /etc/apt/sources.list'
-  - sudo su - 'echo "deb-src http://ch.archive.ubuntu.com/ubuntu/
-  saucy main restricted" >> /etc/apt/sources.list'
+  - sudo su -c 'echo "deb http://ch.archive.ubuntu.com/ubuntu/ saucy main restricted" >> /etc/apt/sources.list'
+  - sudo su - 'echo "deb-src http://ch.archive.ubuntu.com/ubuntu/ saucy main restricted" >> /etc/apt/sources.list'
   - sudo apt-get update -qq
   - sudo apt-get install --force-yes emacs24
   - sudo pip install codecov
