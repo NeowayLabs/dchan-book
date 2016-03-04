@@ -31,13 +31,13 @@ clean: clean-latex clean-source
 	rm -f *.log
 
 %.html: %.org
-	org2html $<
+	org2html -y $<
 
 %.txt: %.org
-	org2txt  $<
+	org2txt -y $<
 
 %.pdf: %.org
-	org2pdf $<
+	org2pdf -y $<
 	-pdflatex dchan.tex
 	bibtex dchan
 	pdflatex dchan.tex
