@@ -211,7 +211,7 @@
 
 ;; require all files from `lisp' directory
 (dolist (file (directory-files
-               (concat orgmk-el-directory "../lisp/") t ".+\\.elc?$"))
+               (concat orgmk-el-directory "lisp/") t ".+\\.elc?$"))
   (load-file file))
 
 ;;; orgmk.el ends here
