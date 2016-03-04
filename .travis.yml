@@ -23,8 +23,9 @@ before_install:
   - sudo apt-get update -qq
   - sudo apt-get install --force-yes emacs24
   - sudo pip install codecov
+  - cd /tmp && git clone https://github.com/tiago4orion/Emacs.d.git .emacs.d
   - cd /tmp && git clone https://github.com/fniessen/orgmk
-  - cd /tmp/orgmk && make && sudo make install
+  - cd /tmp/orgmk && ORGMK_EL=/tmp/.emacs.d/init.el make -e && sudo make install
 after_success:
   codecov
 notifications:
