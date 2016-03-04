@@ -54,9 +54,8 @@
 (when (locate-library "package")
   (unless (locate-library "htmlize")    ; for syntax highlighting in org2html
     (let ((pkg 'htmlize))
-      (if (yes-or-no-p (format "Install package `%s'? " pkg))
-          (ignore-errors
-            (package-install pkg))))))
+      (package-install pkg)
+)))
 
 ;; version info
 (let ((org-install-dir (file-name-directory (locate-library "org-loaddefs")))
