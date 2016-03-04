@@ -110,7 +110,7 @@ function setup {
 
     mkdir -p "${dchandir}"
 
-    /usr/local/plan9/bin/9pfuse 'tcp!localhost!6666' "${dchandir}"
+    9pfuse 'tcp!localhost!6666' "${dchandir}"
 
     if [ "$?" != "0" ]; then
         echo "Failed to mount 9P"
@@ -146,7 +146,7 @@ function teardown {
 
     echo "PWD=$(pwd)"
 
-    /usr/local/plan9/bin/unmount "${dchandir}"
+    unmount "${dchandir}"
 
     sleep 3
 
