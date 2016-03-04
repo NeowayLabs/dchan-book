@@ -21,4 +21,6 @@ ADD . /gopath/src/github.com/NeowayLabs/dchan
 
 WORKDIR /gopath/src/github.com/NeowayLabs/dchan
 
+RUN go get -v ./...
+
 CMD ["make", "build"]
