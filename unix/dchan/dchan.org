@@ -103,7 +103,7 @@ function setup {
     fi
 
     # Store dchan pid for later kill
-    DCHANPID=$!
+    local dchanpid=$!
 
     # wait for dchan initialization
     sleep 3
@@ -114,7 +114,7 @@ function setup {
 
     if [ "$?" != "0" ]; then
         echo "Failed to mount 9P"
-        teardown "${dchandir}" ""
+        teardown "${dchandir}" "${dchanpid}"
         exit 1
     fi
 
@@ -125,9 +125,11 @@ function setup {
 
     if [ "$?" != "0" ]; then
         echo "Failed to enter into dchan directory"
-        teardown "${dchandir}" "${DCHANPID}"
+        teardown "${dchandir}" "${dchanpid}"
         exit 1
     fi
+
+    echo -n "${dchanpid}"
 }
 #+END_SRC
 
@@ -163,7 +165,6 @@ function teardown {
 # This functions only test the filesystem interface
 
 DCHANDIR=/tmp/dchan
-DCHANPID=""
 
 <<src-tests-fn-setup>>
 
@@ -179,7 +180,7 @@ function changedir {
     echo "Current dir=$(pwd)"
 }
 
-setup "${DCHANDIR}"
+DCHANPID=$(setup "${DCHANDIR}")
 changedir
 teardown "${DCHANDIR}" "${DCHANPID}"
 
