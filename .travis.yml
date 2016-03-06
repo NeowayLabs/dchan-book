@@ -20,6 +20,7 @@ before_install:
   - cd /tmp/orgmk && ORGMK_EL=$HOME/gopath/src/github.com/NeowayLabs/dchan/scripts/orgmk.el make -e && sudo make install
   - cd /tmp && git clone https://github.com/tiago4orion/plan9port.git plan9
   - cd /tmp/plan9 && ./INSTALL
+  - sudo addgroup travis fuse
 notifications:
   email:
     - tiago.natel@neoway.com.br
