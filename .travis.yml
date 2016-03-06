@@ -4,7 +4,7 @@ go:
   - 1.4
   - tip
 env:
-  - PLAN9=/tmp/plan9 PATH=$PLAN9/bin:$PATH
+  - PLAN9=/tmp/plan9 PATH=$PATH:$PLAN9/bin
 install:
   - cd $HOME/gopath/src/github.com/NeowayLabs/dchan
   - make tangle
