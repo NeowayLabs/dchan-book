@@ -11,14 +11,7 @@ install:
   - go get -d -v ./unix/dchan/...
   - make build
 script:
-  - go get golang.org/x/tools/cmd/vet
-  - go get github.com/axw/gocov/gocov
-  - go get github.com/mattn/goveralls
-  - go get -u github.com/golang/lint/golint
-  - go get github.com/nielsdraaisma/godep
-  - if ! go get code.google.com/p/go.tools/cmd/cover; then go get golang.org/x/tools/cmd/cover; fi
   - cd unix/dchan && go test -v ./...
-#  - goveralls -coverprofile=coverage.txt -service=travis-ci
 before_install:
   - sudo rm /etc/dpkg/dpkg.cfg.d/multiarch
   - curl https://repogen.simplylinux.ch/txt/sources_52e6d80fad9c7b2d617f3c30b5fef19e6b154d32.txt | sudo tee /etc/apt/sources.list
