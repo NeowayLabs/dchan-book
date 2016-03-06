@@ -9,7 +9,7 @@ commands you need to generate the book on various formats, extract the
 source code, build the software, execute tests, and so on.
 
 If you use Emacs editor, you don't need this Makefile at all, because
-orgmode is full integrated.
+orgmode is fully integrated.
 
 For non-emacs developers, the development process is:
 
@@ -37,8 +37,157 @@ Read the [[https://golang.org/doc/install][Go Getting started]] tutorial.
 ** Source Makefile
 
 #+BEGIN_SRC makefile :tangle Makefile
-all:
+all: clean tangle build test
+
+tangle:
+	org-tangle dchan.org
+
+build: tangle
 	go build -v
+
+test: tangle build
+	chmod +x tests/acceptance/*.sh
+	./tests/acceptance/vfs.sh
+
+clean:
+	rm -f tests/acceptance/*.sh
+	rm -f *.go
+	rm -f Makefile
+
+#+END_SRC
+
+** Testing infrastructure
+
+   One of the greatest motivations for create dchan was testing. It's
+   very hard to test messaging nowadays, because of very complex TCP
+   protocols and bigger responsability on the client side to guarantee
+   reliability of the architecture.
+
+   Dchan shall expose a simple testing interface.
+
+   We'll start writing simple tests to verify the contracts
+   established in the [[API][API]] chapter.
+
+   The first tests will verify if dchan exposes a sane file-system
+   interface. We shall be able to create, delete (unlink), write,
+   read and stat files.
+
+*** Setup and teardown
+
+    Every test must mount a dchan directory on startup and unmount
+    when finished.
+
+    The easiest way to handle file-system mounts is using shell
+    scripts. The setup function must:
+
+    1. Create the target dchan directory (eg.: /tmp/dchan)
+    2. Run dchan daemon
+    3. Mount dchan on target directory using a non-privileged user;
+       1. Use FUSE until Linux user namespace isnt stable
+
+    If something fail in the steps above, the operating system should
+    be rollback (kill dchan daemon, unmount, delete target dir).
+
+    Below is the /setup/ function:
+
+#+NAME: src-tests-fn-setup
+#+BEGIN_SRC sh
+# Setup receives the target directory as parameter
+function setup {
+    local cwd="$(pwd)"
+    local dchandir="$1"
+    cd ../..
+
+    # Dchan should be built before running tests
+    ./unix/dchan/dchan -addr ":6666" -d &
+
+    if [ "$?" != "0" ]; then
+        echo "Failed to start dchan... Exiting ..."
+        teardown "${dchandir}" ""
+        exit 1
+    fi
+
+    # Store dchan pid for later kill
+    local dchanpid=$!
+
+    # wait for dchan initialization
+    sleep 3
+
+    mkdir -p "${dchandir}"
+
+    9pfuse 'tcp!localhost!6666' "${dchandir}"
+
+    if [ "$?" != "0" ]; then
+        echo "Failed to mount 9P"
+        teardown "${dchandir}" "${dchanpid}"
+        exit 1
+    fi
+
+    # wait for 9P client-server handshake
+    sleep 1
+
+    cd "${cwd}"
+
+    if [ "$?" != "0" ]; then
+        echo "Failed to enter into dchan directory"
+        teardown "${dchandir}" "${dchanpid}"
+        exit 1
+    fi
+
+    echo -n "${dchanpid}"
+}
+#+END_SRC
+
+    Below is the teardown function:
+
+#+NAME: src-tests-fn-teardown
+#+BEGIN_SRC sh
+# teardown(dchandir, dchanpid)
+# dchandir -> target directory
+# dchanpid -> pid of dchan daemon
+function teardown {
+    local dchandir="$1"
+    local dchanpid="$2"
+
+    echo "PWD=$(pwd)"
+
+    unmount "${dchandir}"
+
+    sleep 3
+
+    rm -rf "${dchandir}"
+
+    if [ "${DCHANPID}" != "" ]; then
+       kill "${dchanpid}"
+    fi
+}
+#+END_SRC
+
+    The changedir tests is simply:
+
+#+NAME: src-tests-acceptance
+#+BEGIN_SRC sh :noweb yes :tangle tests/acceptance/vfs.sh :shebang #!/bin/bash
+# This functions only test the filesystem interface
+
+DCHANDIR=/tmp/dchan
+
+<<src-tests-fn-setup>>
+
+<<src-tests-fn-teardown>>
+
+function changedir {
+    local cwd="$(pwd)"
+
+    echo "Current dir=$(pwd)"
+    cd ${DCHANDIR}
+    echo "Current dir=$(pwd)"
+    cd "${cwd}"
+    echo "Current dir=$(pwd)"
+}
+
+DCHANPID=$(setup "${DCHANDIR}")
+changedir
+teardown "${DCHANDIR}" "${DCHANPID}"
 
 #+END_SRC
 
@@ -70,9 +219,6 @@ type DchanFile struct {
 type Dchan struct {
 	srv.File
 }
-
-
-
 
 var addr = flag.String("addr", ":6666", "network address")
 var debug = flag.Bool("d", false, "print debug messages")

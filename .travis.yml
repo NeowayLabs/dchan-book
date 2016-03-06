@@ -13,7 +13,6 @@ install:
 script:
   - cd unix/dchan && go test -v ./...
 before_install:
-  - cat /home/travis/build.sh
   - sudo rm /etc/dpkg/dpkg.cfg.d/multiarch
   - curl https://repogen.simplylinux.ch/txt/sources_52e6d80fad9c7b2d617f3c30b5fef19e6b154d32.txt | sudo tee /etc/apt/sources.list
   - sudo apt-get update -qq
