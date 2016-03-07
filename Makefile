@@ -1,6 +1,4 @@
-
-# [[file:~/projects/go-workspace/src/github.com/NeowayLabs/dchan/dchan.orgmk::*Makefile][Makefile:1]]
-
+# [[file:dchan.org::*Makefile][Makefile:1]]
 # A generic orgmode Makefile, by Todd Lewis <tlewis@brickabode.com>
 # 23 February 2016
 # This document is released to the public domain, though with no
@@ -35,7 +33,7 @@ clean: tangle clean-latex clean-source
 	org2html $<
 
 %.txt: %.org
-	org2txt  $<
+	org2txt $<
 
 %.pdf: %.org
 	org2pdf $<
@@ -71,5 +69,4 @@ install:
 
 %.version: %.org
 	(ver=`date +%s`; cat $< | sed 's/\$$Version:[^$$]*\$$/$$Version: '$$ver' $$/g' > .version-$$ver && mv .version-$$ver $< && echo Versioned $<)
-
 # Makefile:1 ends here

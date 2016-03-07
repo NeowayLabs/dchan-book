@@ -74,7 +74,7 @@ clean: tangle clean-latex clean-source
 	org2html $<
 
 %.txt: %.org
-	org2txt  $<
+	org2txt $<
 
 %.pdf: %.org
 	org2pdf $<
