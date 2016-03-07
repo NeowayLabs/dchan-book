@@ -315,3 +315,12 @@ remount option, enabling then to reuse the mount point already used by
 applications (no need to cwd again to directory). The remount can be
 done explicitly by the application using dchan or by an external
 software. This topic will be more detailed in the section [[dchan-proxy][dchan-proxy]].
+
+* Footnotes
+
+[fn:1] R. Milner, "A Calculus of Communicating Systems", Lecture Notes
+in Computer Science, Vol. 92, Springer-Verlag, 1980.
+
+[fn:2] Ptolemy II: http://ptolemy.eecs.berkeley.edu/papers/99/HMAD/html/csp.html
+
+[fn:3] https://golang.org/ref/spec\#Select_statements
