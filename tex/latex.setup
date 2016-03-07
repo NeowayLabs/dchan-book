@@ -1,4 +1,4 @@
-#+LATEX_CLASS: article
+#+LATEX_CLASS: book
 #+LATEX_HEADER: \usepackage{color}
 #+LATEX_HEADER: \usepackage{listings}
 #+LATEX_HEADER: \usepackage{tex/listings-go}
