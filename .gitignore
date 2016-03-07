@@ -1,1 +1,9 @@
 unix/dchan/dchan
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.pdf
+*.tex
+*.toc
