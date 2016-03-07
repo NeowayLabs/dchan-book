@@ -89,11 +89,10 @@ tangle:
 tangle-src:
 	org-tangle $(DOC_SRC)
 
-build: $(OBJ)
-doc: $(HTMLS) $(PDFS) $(TXTS)
+build: tangle-src
+	cd unix/dchan/ && make build
 
-$(OBJ): tangle-src
-	cd unix/dchan/ && make
+doc: $(HTMLS) $(PDFS) $(TXTS)
 
 test: tangle
 	cd unix/dchan/ && make test
