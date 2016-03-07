@@ -1,0 +1,27 @@
+language: go
+
+go:
+  - 1.4
+  - tip
+env:
+  - PLAN9=/tmp/plan9 PATH=$PATH:$PLAN9/bin
+install:
+  - cd $HOME/gopath/src/github.com/NeowayLabs/dchan && make tangle && make tangle-src && go get -v ./unix/dchan/... && make build
+script:
+  - cd unix/dchan && go test -v ./...
+before_install:
+  - sudo rm /etc/dpkg/dpkg.cfg.d/multiarch
+  - curl https://repogen.simplylinux.ch/txt/sources_52e6d80fad9c7b2d617f3c30b5fef19e6b154d32.txt | sudo tee /etc/apt/sources.list
+  - sudo apt-get update -qq
+  - sudo apt-get install --force-yes emacs24
+  - sudo apt-get install -y texlive-latex-recommended
+  - sudo pip install codecov
+  - cd /tmp && git clone https://github.com/fniessen/orgmk
+  - cd /tmp/orgmk && ORGMK_EL=$HOME/gopath/src/github.com/NeowayLabs/dchan/scripts/orgmk.el make -e && sudo make install
+  - cd /tmp && git clone https://github.com/tiago4orion/plan9port.git plan9
+  - cd /tmp/plan9 && ./INSTALL
+  - sudo addgroup travis fuse
+  - sudo chmod 755 /etc/fuse.conf
+notifications:
+  email:
+    - tiago.natel@neoway.com.br
