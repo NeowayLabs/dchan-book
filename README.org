@@ -1,6 +1,6 @@
 #+CAPTION: Travis-CI status
 #+NAME: travis-build-status
-[[https://travis-ci.org/NeowayLabs/dchan.svg?branch=master]]
+[[https://travis-ci.org/NeowayLabs/dchan][https://travis-ci.org/NeowayLabs/dchan.svg?branch=master]]
 
 * dchan
 
