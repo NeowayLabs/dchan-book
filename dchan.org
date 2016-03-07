@@ -125,17 +125,9 @@ make
 * Development
 #+INCLUDE: "unix/dchan/dchan.org" :minlevel 2
 
+#+INCLUDE: "unix/dchan-proxy/proxy.org" :minlevel 2
+
 * Bibliography
 
 \bibliographystyle{plainnat}
 \bibliography{./dchan}
-
-
-* Footnotes
-
-[fn:1] R. Milner, "A Calculus of Communicating Systems", Lecture Notes
-in Computer Science, Vol. 92, Springer-Verlag, 1980.
-
-[fn:2] Ptolemy II: http://ptolemy.eecs.berkeley.edu/papers/99/HMAD/html/csp.html
-
-[fn:3] https://golang.org/ref/spec\#Select_statements
