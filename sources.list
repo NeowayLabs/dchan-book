@@ -1,0 +1,15 @@
+#------------------------------------------------------------------------------#
+#                            OFFICIAL UBUNTU REPOS                             #
+#------------------------------------------------------------------------------#
+
+
+###### Ubuntu Main Repos
+deb http://us.archive.ubuntu.com/ubuntu/ vivid main universe 
+deb-src http://us.archive.ubuntu.com/ubuntu/ vivid main universe 
+
+###### Ubuntu Update Repos
+deb http://us.archive.ubuntu.com/ubuntu/ vivid-security main universe 
+deb http://us.archive.ubuntu.com/ubuntu/ vivid-updates main universe 
+deb-src http://us.archive.ubuntu.com/ubuntu/ vivid-security main universe 
+deb-src http://us.archive.ubuntu.com/ubuntu/ vivid-updates main universe 
+

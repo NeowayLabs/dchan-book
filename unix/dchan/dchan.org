@@ -108,10 +108,10 @@ function setup {
     fi
 
     # Store dchan pid for later kill
-    local dchanpid=$!
+    DCHANPID=$!
 
     # wait for dchan initialization
-    sleep 3
+    sleep 2
 
     mkdir -p "${dchandir}"
 
@@ -119,22 +119,20 @@ function setup {
 
     if [ "$?" != "0" ]; then
         echo "Failed to mount 9P"
-        teardown "${dchandir}" "${dchanpid}"
+        teardown "${dchandir}" "${DCHANPID}"
         exit 1
     fi
 
     # wait for 9P client-server handshake
-    sleep 1
+    sleep 2
 
     cd "${cwd}"
 
     if [ "$?" != "0" ]; then
         echo "Failed to enter into dchan directory"
-        teardown "${dchandir}" "${dchanpid}"
+        teardown "${dchandir}" "${DCHANPID}"
         exit 1
     fi
-
-    echo -n "${dchanpid}"
 }
 #+END_SRC
 
@@ -165,16 +163,8 @@ function teardown {
 
     The changedir tests is simply:
 
-#+NAME: src-tests-acceptance
-#+BEGIN_SRC sh :noweb yes :tangle tests/acceptance/vfs.sh :shebang #!/bin/bash
-# This functions only test the filesystem interface
-
-DCHANDIR=/tmp/dchan
-
-<<src-tests-fn-setup>>
-
-<<src-tests-fn-teardown>>
-
+#+NAME: src-tests-fn-changedir
+#+BEGIN_SRC sh
 function changedir {
     local cwd="$(pwd)"
 
@@ -184,9 +174,35 @@ function changedir {
     cd "${cwd}"
     echo "Current dir=$(pwd)"
 }
+#+END_SRC
 
-DCHANPID=$(setup "${DCHANDIR}")
+#+NAME: src-tests-acceptance
+#+BEGIN_SRC sh :noweb yes :tangle tests/acceptance/vfs.sh :shebang #!/bin/bash :exports none
+# This functions only test the filesystem interface
+
+DCHANDIR=/tmp/dchan
+DCHANPID=""
+
+# trap ctrl-c and call ctrl_c()
+trap ctrl_c INT
+
+function ctrl_c() {
+        echo "** Trapped CTRL-C"
+        teardown "${DCHANDIR}" "${DCHANPID}"
+        exit 1
+}
+
+<<src-tests-fn-setup>>
+
+<<src-tests-fn-teardown>>
+
+<<src-tests-fn-changedir>>
+
+echo "Running dchan and mounting FS"
+setup "${DCHANDIR}"
+echo "Setup completed"
 changedir
+echo "Teardown"
 teardown "${DCHANDIR}" "${DCHANPID}"
 
 #+END_SRC
