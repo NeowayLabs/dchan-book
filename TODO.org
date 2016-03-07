@@ -1,0 +1,37 @@
+* Dchan [4/6]                                                         :dchan:
+** DONE Plan9 Proof of Concept
+
+** DONE Design of API
+
+** DONE Add travis-ci integration
+   SCHEDULED: <2016-03-04 Fri> DEADLINE: <2016-03-07 Mon>
+
+** DONE Design of dchan-proxy
+
+** Dchan-proxy [0/2]                                                  :proxy:
+
+*** TODO Implement dchan-proxy PoC [40%]
+    SCHEDULED: <2016-03-08 Tue> DEADLINE: <2016-03-18 Fri>
+    :PROPERTIES:
+    :ORDERED:  t
+    :END:
+ - [X] Create the basic 9P file server
+ - [X] Add testing infrastructure
+ - [ ] Test usage of unix socket as transport protocol
+ - [ ] Study the Go API for 9P clients (for proxying requests)
+ - [ ] Implement the proxy (to be divided in sub-tasks)
+
+*** TODO Create intensive tests simulating network problems
+    SCHEDULED: <2016-03-21 Mon>
+
+** Dchan-server [0/0]                                                :server:
+*** TODO Port Plan9 version to Go
+
+** TODO Port part of our architecture to use dchan
+
+** TODO Add some instrumentation to compare against RabbitMQ
+
+** Generate comparison tables [0/2]
+
+*** TODO Benchmark tables
+*** TODO LoC on client side (dchan vs amqp)
