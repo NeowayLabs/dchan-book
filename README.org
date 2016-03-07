@@ -1,3 +1,7 @@
+#+CAPTION: Travis-CI status
+#+NAME: travis-build-status
+[[https://travis-ci.org/NeowayLabs/dchan.svg?branch=master]]
+
 * dchan
 
   Dchan is a server that exposes channels for inter-process
