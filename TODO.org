@@ -10,14 +10,14 @@
 
 ** Dchan-proxy [0/2]                                                  :proxy:
 
-*** TODO Implement dchan-proxy PoC [40%]
+*** TODO Implement dchan-proxy PoC [60%]
     SCHEDULED: <2016-03-08 Tue> DEADLINE: <2016-03-18 Fri>
     :PROPERTIES:
     :ORDERED:  t
     :END:
  - [X] Create the basic 9P file server
  - [X] Add testing infrastructure
- - [ ] Test usage of unix socket as transport protocol
+ - [X] Test usage of unix socket as transport protocol
  - [ ] Study the Go API for 9P clients (for proxying requests)
  - [ ] Implement the proxy (to be divided in sub-tasks)
 
