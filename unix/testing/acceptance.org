@@ -31,7 +31,7 @@
     be rollback (kill dchan daemon, unmount, delete target dir).
 
     The testing infrastructure should be used as a bash
-    library. Modules must include (or /source helper.sh/ and invoke
+    library. Modules must include (or /source helper.sh/) and invoke
     the right functions for setup and teardown.
 
     The /setup/ function invokes the 9P daemon using a cmdline passed
