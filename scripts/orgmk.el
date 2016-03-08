@@ -115,6 +115,7 @@
 (add-to-list 'org-babel-load-languages '(ledger . t)) ; Requires ledger.
 (add-to-list 'org-babel-load-languages '(makefile . t))
 (add-to-list 'org-babel-load-languages '(org . t))
+(add-to-list 'org-babel-load-languages '(go . t))
 (if (locate-library "ob-shell")         ; ob-sh renamed on 2013-12-13
     (add-to-list 'org-babel-load-languages '(shell . t))
   (add-to-list 'org-babel-load-languages '(sh . t)))
