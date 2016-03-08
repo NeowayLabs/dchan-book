@@ -1,0 +1,331 @@
+* dchan-proxy
+
+** Makefile
+
+#+BEGIN_SRC makefile :tangle Makefile
+all: clean tangle build test
+
+tangle:
+	org-tangle proxy.org
+
+build: tangle
+	go build -v
+
+test: tangle build
+	chmod +x tests/acceptance/*.sh
+	./tests/acceptance/vfs.sh
+
+clean:
+	rm -f tests/acceptance/*.sh
+	rm -f *.go
+	rm -f Makefile
+
+#+END_SRC
+
+** Proxy acceptance tests
+
+   The most important acceptance tests for the proxy server are:
+
+   - File system interface;
+   - Network partitions with dchan server;
+
+   Below are the VFS tests:
+
+#+BEGIN_SRC sh :tangle tests/acceptance/vfs.sh :shebang #!/bin/bash
+. ../testing/helpers.sh
+
+function changedir {
+    local targetdir="$1"
+
+    cd "${targetdir}"
+
+    if [ "$?" != "0" ]; then
+        echo "Failed to change dir"
+        exit 1
+    fi
+}
+
+setup "/tmp/dchan-proxy" "unix!/tmp/dchan-proxy.sock" "$(pwd)/dchan-proxy -addr /tmp/dchan-proxy.sock -d"
+
+changedir "/tmp/dchan-proxy"
+
+teardown "/tmp/dchan-proxy" "${DAEMONPID}"
+#+END_SRC
+
+** Proxy implementation
+
+   Dchan-proxy is a pure TCP proxy that knows nothing about 9P or
+   dchan internal working. It only bypass network packets to
+   destination server. The difference is that it never fail to
+   clients. If the backend server goes down or network link is down,
+   it will not return any bytes to client until it successfull
+   reconnects with backend server.
+
+*** Main
+
+   Dchan-proxy receives only two command-line parameters:
+
+   - laddr: URI to listen on
+   - raddr: URI to TCP remote address
+
+#+NAME: src-dchan-proxy-flags
+#+BEGIN_SRC go
+var (
+	laddr *string = flag.String("laddr", "unix:///var/run/dchan-proxy.sock", "local address")
+	raddr *string = flag.String("raddr", "", "remote address")
+)
+#+END_SRC
+
+    The main function only parses the command line arguments and calls core.Start.
+
+#+BEGIN_SRC go src-main.go :tangle main.go :noweb yes :main no
+package main
+
+import (
+	"os"
+	"fmt"
+	"flag"
+	"github.com/NeowayLabs/dchan/unix/proxy/core"
+)
+
+<<src-dchan-proxy-flags>>
+
+func main() {
+	var err error
+
+	flag.Parse()
+
+	if *laddr == "" || *raddr == "" {
+		fmt.Printf("-laddr and -raddr are required.\n")
+		os.Exit(1)
+	}
+
+	err = core.Start(*laddr, *raddr)
+
+	if err != nil {
+		panic(err)
+	}
+}
+
+#+END_SRC
+
+#+RESULTS:
+
+*** Proxy package
+
+    The proxy package is responsible for the magic. It starts the
+    socket server and the goroutines to handle the requests.
+
+    Start resolves the local address and starts listening on
+    configured local port for incoming connections.
+
+#+NAME: src-proxy-core-fn-start
+#+BEGIN_SRC go
+// chanFromConn creates a channel from a Conn object, and sends everything it
+//  Read()s from the socket to the channel.
+func chanFromConn(conn net.Conn) chan []byte {
+    c := make(chan []byte)
+
+    go func() {
+        b := make([]byte, 1024)
+
+        for {
+            n, err := conn.Read(b)
+            if n > 0 {
+                res := make([]byte, n)
+                // Copy the buffer so it doesn't get changed while read by the recipient.
+                copy(res, b[:n])
+                c <- res
+            }
+            if err != nil {
+                c <- nil
+                break
+            }
+        }
+    }()
+
+    return c
+}
+
+// Pipe creates a full-duplex pipe between the two sockets and transfers data from one to the other.
+func Pipe(conn1 net.Conn, conn2 net.Conn) {
+    chan1 := chanFromConn(conn1)
+    chan2 := chanFromConn(conn2)
+
+    for {
+        select {
+        case b1 := <-chan1:
+            if b1 == nil {
+                return
+            } else {
+                conn2.Write(b1)
+            }
+        case b2 := <-chan2:
+            if b2 == nil {
+                return
+            } else {
+                conn1.Write(b2)
+            }
+        }
+    }
+}
+
+func Start(laddr, raddr string) error {
+	var (
+		nettype, addrval string
+		err error
+	)
+
+	if laddr[0:7] == "unix://" {
+		nettype = "unix"
+		addrval = laddr[7:]
+	} else if laddr[0:6] == "tcp://" {
+		nettype = "tcp"
+		addrval = laddr[6:]
+	} else {
+		nettype = "tcp"
+		addrval = laddr
+	}
+
+	listener, err := net.Listen(nettype, addrval)
+
+	if err != nil {
+		panic(err)
+	}
+
+	for {
+		conn, err := listener.Accept()
+
+		if err != nil {
+			panic(err)
+		}
+
+                go func() {
+			rAddr, err := net.ResolveTCPAddr("tcp", raddr)
+			if err != nil {
+				panic(err)
+			}
+
+			rConn, err := net.DialTCP("tcp", nil, rAddr)
+
+			if err != nil {
+				panic(err)
+			}
+
+			defer rConn.Close()
+
+			Pipe(conn, rConn)
+
+			conn.Close()
+		}()
+	}
+}
+#+END_SRC
+
+#+BEGIN_SRC go :tangle core/proxy.go :noweb yes :main no :comments yes
+package core
+
+import (
+	"net"
+)
+
+<<src-proxy-core-fn-start>>
+
+#+END_SRC
+
+#+NAME: src|main.go
+#+BEGIN_SRC go :noweb true :exports none
+package main
+
+import (
+	"errors"
+	"flag"
+	"fmt"
+	"log"
+	"os"
+
+	"github.com/lionkov/go9p/p"
+	"github.com/lionkov/go9p/p/srv"
+)
+
+type DchanFile struct {
+	srv.File
+	id int
+}
+
+type Dchan struct {
+	srv.File
+}
+
+var addr = flag.String("addr", ":6666", "network address")
+var debug = flag.Bool("d", false, "print debug messages")
+
+var root *srv.File
+
+func (file *DchanFile) Read(fid *srv.FFid, buf []byte, offset uint64) (int, error) {
+	b := []byte("hacked by i4k")
+	n := len(b)
+
+	if offset >= uint64(n) {
+		return 0, nil
+	}
+
+	b = b[int(offset):n]
+	n -= int(offset)
+	if len(buf) < n {
+		n = len(buf)
+	}
+
+	copy(buf[offset:int(offset)+n], b[offset:])
+	return n, nil
+}
+
+func (file *DchanFile) Write(fid *srv.FFid, data []byte, offset uint64) (int, error) {
+	return 0, errors.New("permission denied")
+}
+
+func (file *DchanFile) Wstat(fid *srv.FFid, dir *p.Dir) error {
+	return nil
+}
+
+func (file *DchanFile) Remove(fid *srv.FFid) error {
+	return nil
+}
+
+func main() {
+	var err error
+	var ctl *DchanFile
+	var s *srv.Fsrv
+
+	flag.Parse()
+	user := p.OsUsers.Uid2User(os.Geteuid())
+	root = new(srv.File)
+	err = root.Add(nil, "/", user, nil, p.DMDIR|0777, nil)
+	if err != nil {
+		goto error
+	}
+
+	ctl = new(DchanFile)
+	err = ctl.Add(root, "ctl", p.OsUsers.Uid2User(os.Geteuid()), nil, 0444, ctl)
+	if err != nil {
+		goto error
+	}
+
+	s = srv.NewFileSrv(root)
+	s.Dotu = true
+
+	if *debug {
+		s.Debuglevel = 1
+	}
+
+	s.Start(s)
+	err = s.StartNetListener("unix", *addr)
+	if err != nil {
+		goto error
+	}
+	return
+
+error:
+	log.Println(fmt.Sprintf("Error: %s", err))
+}
+#+END_SRC
