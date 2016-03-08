@@ -41,7 +41,10 @@
      :LOGBOOK:
      CLOCK: [2016-03-08 Tue 12:20]--[2016-03-08 Tue 14:19] =>  1:59
      :END:
-**** TODO Study the Go API for 9P clients (for proxying requests)
+**** NEXT Study the Go API for 9P clients (for proxying requests)
+     :LOGBOOK:
+     CLOCK: [2016-03-08 Tue 15:20]
+     :END:
 **** TODO Implement the proxy (to be divided in sub-tasks)
 
 *** TODO Create intensive tests simulating network problems
