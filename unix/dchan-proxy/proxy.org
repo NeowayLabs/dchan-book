@@ -9,6 +9,7 @@ tangle:
 	org-tangle proxy.org
 
 build: tangle
+	go get -v -t ./...
 	go build -v
 
 test: tangle build
@@ -31,25 +32,13 @@ clean:
 
    Below are the VFS tests:
 
-#+BEGIN_SRC sh :tangle tests/acceptance/vfs.sh :shebang #!/bin/bash
-. ../testing/helpers.sh
+#+BEGIN_SRC :tangle tests/acceptance/vfs.sh :shebang #!/bin/bash
+. ../../../testing/helpers.sh
 
-function changedir {
-    local targetdir="$1"
-
-    cd "${targetdir}"
-
-    if [ "$?" != "0" ]; then
-        echo "Failed to change dir"
-        exit 1
-    fi
-}
-
-setup "/tmp/dchan-proxy" "unix!/tmp/dchan-proxy.sock" "$(pwd)/dchan-proxy -addr /tmp/dchan-proxy.sock -d"
-
-changedir "/tmp/dchan-proxy"
-
+setup "/tmp/dchan-proxy" "../../dchan-proxy -addr /tmp/dchan-proxy.sock -d
 teardown "/tmp/dchan-proxy" "${DAEMONPID}"
+
+rm /tmp/dchan-proxy.sock
 #+END_SRC
 
 #+NAME: src|main.go
