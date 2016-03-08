@@ -9,17 +9,20 @@
 ** DONE Design of dchan-proxy
 
 ** Dchan-proxy [0/2]                                                  :proxy:
-
-*** TODO Implement dchan-proxy PoC [60%]
+*** TODO Implement dchan-proxy PoC [3/6]
     SCHEDULED: <2016-03-08 Tue> DEADLINE: <2016-03-18 Fri>
     :PROPERTIES:
     :ORDERED:  t
     :END:
- - [X] Create the basic 9P file server
- - [X] Add testing infrastructure
- - [X] Test usage of unix socket as transport protocol
- - [ ] Study the Go API for 9P clients (for proxying requests)
- - [ ] Implement the proxy (to be divided in sub-tasks)
+**** DONE Create the basic 9P file server
+**** DONE Add testing infrastructure
+**** DONE Test usage of unix socket as transport protocol
+**** TODO Separate testing infrastructure in a sub-module. [[https://github.com/NeowayLabs/dchan/issues/10][#10]]
+     :LOGBOOK:
+     CLOCK: [2016-03-08 Tue 12:20]--[2016-03-08 Tue 14:19] =>  1:59
+     :END:
+**** TODO Study the Go API for 9P clients (for proxying requests)
+**** TODO Implement the proxy (to be divided in sub-tasks)
 
 *** TODO Create intensive tests simulating network problems
     SCHEDULED: <2016-03-21 Mon>
@@ -35,3 +38,13 @@
 
 *** TODO Benchmark tables
 *** TODO LoC on client side (dchan vs amqp)
+
+#+BEGIN: clocktable :maxlevel 2 :scope file
+#+CAPTION: Clock summary at [2016-03-08 Tue 14:25]
+| Headline              | Time   |      |
+|-----------------------+--------+------|
+| *Total time*          | *1:59* |      |
+|-----------------------+--------+------|
+| Dchan [4/6]           | 1:59   |      |
+| \_  Dchan-proxy [0/2] |        | 1:59 |
+#+END:
