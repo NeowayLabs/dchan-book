@@ -1,4 +1,4 @@
-# [[file:dchan.org::*Makefile][Makefile:1]]
+# [[file:dchan.orgmk::*Makefile][Makefile:1]]
 # A generic orgmode Makefile, by Todd Lewis <tlewis@brickabode.com>
 # 23 February 2016
 # This document is released to the public domain, though with no
@@ -9,8 +9,11 @@
 
 # To install `dchan', type `make' and then `make install'.
 BIN_DIR=/usr/local/bin
-OBJ=dchan
-DOC_SRC=$(wildcard unix/dchan/*.org)
+DCHAN_SRC=$(wildcard unix/dchan/*.org)
+PROXY_SRC=$(wildcard unix/dchan-proxy/*.org)
+TEST_SRC=$(wildcard unix/testing/*.org)
+OBJS=	unix/dchan/dchan \
+	unix/dchan-proxy/dchan-proxy
 DOC_BOOK=dchan.org
 HTMLS=$(patsubst %.org,%.html,$(DOC_BOOK))
 TXTS=$(patsubst %.org,%.txt,$(DOC_BOOK))
@@ -23,6 +26,7 @@ clean-latex:
 
 clean-source:
 	-cd unix/dchan/ && make clean
+	-cd unix/dchan-proxy/ && make clean
 
 clean: tangle clean-latex clean-source
 	rm -f *.pngt
@@ -46,18 +50,21 @@ tangle:
 	org-tangle $(DOC_BOOK)
 
 tangle-src:
-	org-tangle $(DOC_SRC)
+	org-tangle $(DCHAN_SRC)
+	org-tangle $(PROXY_SRC)
+	org-tangle $(TEST_SRC)
 
 build: tangle-src
 	cd unix/dchan/ && make build
+	cd unix/dchan-proxy/ && make build
 
 doc: $(HTMLS) $(PDFS) $(TXTS)
 
-test: tangle
-	cd unix/dchan/ && make test
+test: tangle-src
+	cd unix/dchan-proxy/ && make test
 
 install:
-	cp $(OBJ) $(BIN_DIR)
+	cp $(OBJS) $(BIN_DIR)
 
 
 # To include an automatic version number in your file, use a header like this:

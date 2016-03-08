@@ -1,5 +1,57 @@
 * dchan-proxy
 
+** Makefile
+
+#+BEGIN_SRC makefile :tangle Makefile
+all: clean tangle build test
+
+tangle:
+	org-tangle proxy.org
+
+build: tangle
+	go build -v
+
+test: tangle build
+	chmod +x tests/acceptance/*.sh
+	./tests/acceptance/vfs.sh
+
+clean:
+	rm -f tests/acceptance/*.sh
+	rm -f *.go
+	rm -f Makefile
+
+#+END_SRC
+
+** Proxy acceptance tests
+
+   The most important acceptance tests for the proxy server are:
+
+   - File system interface;
+   - Network partitions with dchan server;
+
+   Below are the VFS tests:
+
+#+BEGIN_SRC sh :tangle tests/acceptance/vfs.sh :shebang #!/bin/bash
+. ../testing/helpers.sh
+
+function changedir {
+    local targetdir="$1"
+
+    cd "${targetdir}"
+
+    if [ "$?" != "0" ]; then
+        echo "Failed to change dir"
+        exit 1
+    fi
+}
+
+setup "/tmp/dchan-proxy" "unix!/tmp/dchan-proxy.sock" "$(pwd)/dchan-proxy -addr /tmp/dchan-proxy.sock -d"
+
+changedir "/tmp/dchan-proxy"
+
+teardown "/tmp/dchan-proxy" "${DAEMONPID}"
+#+END_SRC
+
 #+NAME: src|main.go
 #+BEGIN_SRC go :tangle main.go :noweb true :exports none
 package main

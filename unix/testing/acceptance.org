@@ -1,0 +1,210 @@
+* Testing infrastructure
+
+   One of the greatest motivations for create dchan was testing. It's
+   very hard to test messaging nowadays, because of very complex TCP
+   protocols and bigger responsability on the client side to guarantee
+   reliability of the architecture.
+
+   Dchan shall expose a simple testing interface.
+
+   We'll start writing simple tests to verify the contracts
+   established in the [[API][API]] chapter.
+
+   The first tests will verify if dchan exposes a sane file-system
+   interface. We shall be able to create, delete (unlink), write,
+   read and stat files.
+
+** Setup and teardown
+
+    Every test must mount a dchan directory on startup and unmount
+    when finished.
+
+    The easiest way to handle file-system mounts is using shell
+    scripts. The setup function must:
+
+    1. Create the target dchan directory (eg.: /tmp/dchan)
+    2. Run dchan daemon
+    3. Mount dchan on target directory using a non-privileged user;
+       1. Use FUSE until Linux user namespace isnt stable
+
+    If something fail in the steps above, the operating system should
+    be rollback (kill dchan daemon, unmount, delete target dir).
+
+    The testing infrastructure should be used as a bash
+    library. Modules must include (or /source helper.sh/ and invoke
+    the right functions for setup and teardown.
+
+    The /setup/ function invokes the 9P daemon using a cmdline passed
+    as third argument and then uses 9pfuse to connect to 9P daemon at
+    second argument (take careful and set this correctly in the
+    cmdline argument) and mount the file system in the directory
+    passed as first argument of the function.
+
+    The PID of the invoked daemon is stored in the DAEMONPID global
+    variable. Setup will wait for daemon initialization and FUSE
+    connection before return. The number of seconds to delay is
+    configured by global variable DELAY and you should update the
+    value according to requirements of your daemon if needed. DELAY
+    default value is 2. Setup stores the /targetdir/ argument in the
+    TARGETDIR global variable to used by /cleanup/ TRAP function if
+    the tests are stopped (by typing CTRL-C on console).
+
+#+NAME: src-tests-fn-setup
+#+BEGIN_SRC sh
+# Setup prepares the environment for 9P file system tests.
+# It receives the target directory, the address to connect to and
+# 9P daemon command line as parameters.
+function setup {
+    local targetdir="$1"
+    local addr="$2"
+    local cmdline="$3"
+    local cwd="$(pwd)"
+
+    TARGETDIR="${targetdir}"
+
+    cd ../..
+
+    # Invokes the daemon
+    eval "${cmdline} &"
+
+    if [ "$?" != "0" ]; then
+        echo "Failed to start daemon... Exiting ..."
+        teardown "${targetdir}" ""
+        exit 1
+    fi
+
+    DAEMONPID=$!
+
+    # wait for daemon initialization
+    sleep "${DELAY}"
+
+    mkdir -p "${targetdir}"
+
+    9pfuse "${addr}" "${targetdir}"
+
+    if [ "$?" != "0" ]; then
+        echo "Failed to mount 9P"
+        teardown "${targetdir}" "${DAEMONPID}"
+        exit 1
+    fi
+
+    # wait for 9P client-server handshake
+    sleep "${DELAY}"
+
+    cd "${cwd}"
+
+    if [ "$?" != "0" ]; then
+        echo "Failed to enter into dchan directory"
+        teardown "${dchandir}" "${DCHANPID}"
+        exit 1
+    fi
+}
+#+END_SRC
+
+    Teardown should undo the changes made in the environment.
+
+    1. Unmount 9P server;
+    2. Kill 9P file server daemon;
+    3. Remove target directory;
+
+    Below is the teardown function:
+
+#+NAME: src-tests-fn-teardown
+#+BEGIN_SRC sh
+# teardown(dchandir, dchanpid)
+# targetdir -> target directory
+# daemonpid -> pid of 9P file server daemon
+function teardown {
+    local targetdir="$1"
+    local daemonpid="$2"
+
+    # first go far away
+    cd /
+
+    if [ "$targetdir}" != "" ]; then
+        unmount "${targetdir}"
+        rm -rf "${targetdir}"
+    fi
+
+    if [ "${daemonpid}" != "" ]; then
+       kill "${daemonpid}"
+    fi
+}
+#+END_SRC
+
+    The cleanup function is executed in case of CTRL-C being invoked
+    by user.
+
+#+NAME: src-tests-fn-cleanup
+#+BEGIN_SRC sh
+# trap ctrl-c and call cleanup()
+trap cleanup INT
+
+function cleanup() {
+        echo "** Trapped CTRL-C"
+        teardown "${TARGETDIR}" "${DAEMONPID}"
+        exit 1
+}
+#+END_SRC
+
+    Setup and Teardown are provided by unix/testing/helpers.sh bash
+    library.
+
+#+NAME: src-tests-acceptance
+#+BEGIN_SRC sh :noweb yes :tangle helpers.sh :shebang #!/bin/bash :exports none
+# Global variables
+DAEMONPID=""
+DELAY=2
+TARGETDIR=""
+
+<<src-tests-fn-cleanup>>
+
+<<src-tests-fn-setup>>
+
+<<src-tests-fn-teardown>>
+#+END_SRC
+
+#+BEGIN_SRC sh :noweb yes :tangle helpers.sh  :shebang #!/bin/bash :exports none
+
+<<src-tests-fn-setup>>
+
+<<src-tests-fn-teardown>>
+
+#+END_SRC
+
+    The setup and teardown functions above are all you should need to
+    test the file tree interface. For example, to test if the file
+    server is mounting a file tree with success, the changedir
+    function below can be used:
+
+#+NAME: src-tests-fn-testchangedir
+#+BEGIN_SRC sh
+function testchangedir {
+    local dir="$1"
+    local cwd="$(pwd)"
+
+
+    cd "${dir}"
+
+    if [ "$?" != "0" ]; then
+        echo "Failed to enter into directory: ${dir}"
+        exit 1
+    fi
+}
+#+END_SRC
+
+    The complete test file can be something like:
+
+#+NAME: src-tests-example
+#+BEGIN_SRC sh :noweb yes
+. ./unix/testing/helpers.sh
+
+<<src-tests-fn-testchangedir>>
+
+setup "/tmp/dchan" "tcp!localhost!6666" "dchan -addr :6666 -d"
+
+testchangedir "/tmp/dchan"
+
+teardown "/tmp/dchan" "${DAEMONPID}"
+
+#+END_SRC
