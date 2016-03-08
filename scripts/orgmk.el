@@ -52,10 +52,14 @@
         (error "Please upgrade to 8 or later")))))
 
 (when (locate-library "package")
-  (unless (locate-library "htmlize")    ; for syntax highlighting in org2html
-    (let ((pkg 'htmlize))
-      (package-install pkg)
-)))
+  (progn
+    (unless (locate-library "htmlize")    ; for syntax highlighting in org2html
+      (let ((pkg 'htmlize))
+        (package-install pkg)
+        ))
+    (unless (locate-library "ob-go")
+      (let ((pkg 'ob-go))
+        (package-install pkg)))))
 
 ;; version info
 (let ((org-install-dir (file-name-directory (locate-library "org-loaddefs")))
