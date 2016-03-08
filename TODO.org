@@ -1,23 +1,43 @@
 * Dchan [4/6]                                                         :dchan:
-** DONE Plan9 Proof of Concept
+** DONE Plan9 Research and Proof of Concept
+   :LOGBOOK:
+   CLOCK: [2016-01-11 Mon 15:00]--[2016-02-03 Tue 15:00] => 552:00
+   :END:
 
 ** DONE Design of API
 
 ** DONE Add travis-ci integration
    SCHEDULED: <2016-03-04 Fri> DEADLINE: <2016-03-07 Mon>
+   :LOGBOOK:
+   CLOCK: [2016-03-07 Mon 12:35]--[2016-03-07 Mon 13:00] =>  0:25
+   CLOCK: [2016-03-04 Fri 09:05]--[2016-03-04 Fri 19:00] =>  9:55
+   :END:
 
 ** DONE Design of dchan-proxy
+   :LOGBOOK:
+   CLOCK: [2016-02-29 Mon 09:15]--[2016-02-29 Mon 18:31] =>  9:16
+   :END:
 
 ** Dchan-proxy [0/2]                                                  :proxy:
-*** TODO Implement dchan-proxy PoC [3/6]
+*** TODO Implement dchan-proxy PoC [4/6]
     SCHEDULED: <2016-03-08 Tue> DEADLINE: <2016-03-18 Fri>
     :PROPERTIES:
     :ORDERED:  t
     :END:
 **** DONE Create the basic 9P file server
+     :LOGBOOK:
+     CLOCK: [2016-03-03 Thu 14:01]--[2016-03-03 Thu 18:12] =>  4:11
+     CLOCK: [2016-03-03 Thu 09:10]--[2016-03-03 Thu 12:02] =>  2:52
+     :END:
 **** DONE Add testing infrastructure
+     :LOGBOOK:
+     CLOCK: [2016-03-07 Mon 13:05]--[2016-03-07 Mon 18:00] =>  4:55
+     :END:
 **** DONE Test usage of unix socket as transport protocol
-**** TODO Separate testing infrastructure in a sub-module. [[https://github.com/NeowayLabs/dchan/issues/10][#10]]
+     :LOGBOOK:
+     CLOCK: [2016-03-08 Tue 10:31]--[2016-03-08 Tue 12:00] =>  1:29
+     :END:
+**** DONE Separate testing infrastructure in a sub-module. [[https://github.com/NeowayLabs/dchan/issues/10][#10]]
      :LOGBOOK:
      CLOCK: [2016-03-08 Tue 12:20]--[2016-03-08 Tue 14:19] =>  1:59
      :END:
@@ -39,12 +59,20 @@
 *** TODO Benchmark tables
 *** TODO LoC on client side (dchan vs amqp)
 
-#+BEGIN: clocktable :maxlevel 2 :scope file
-#+CAPTION: Clock summary at [2016-03-08 Tue 14:25]
-| Headline              | Time   |      |
-|-----------------------+--------+------|
-| *Total time*          | *1:59* |      |
-|-----------------------+--------+------|
-| Dchan [4/6]           | 1:59   |      |
-| \_  Dchan-proxy [0/2] |        | 1:59 |
+#+BEGIN: clocktable :maxlevel 4 :scope file
+#+CAPTION: Clock summary at [2016-03-08 Tue 15:28]
+| Headline                                        | Time        |          |       |      |
+|-------------------------------------------------+-------------+----------+-------+------|
+| *Total time*                                    | *24d 10:02* |          |       |      |
+|-------------------------------------------------+-------------+----------+-------+------|
+| Dchan [4/6]                                     | 24d 10:02   |          |       |      |
+| \_  DONE Plan9 Research and Proof of Concept    |             | 23d 0:00 |       |      |
+| \_  DONE Add travis-ci integration              |             |    10:20 |       |      |
+| \_  DONE Design of dchan-proxy                  |             |     9:16 |       |      |
+| \_  Dchan-proxy [0/2]                           |             |    14:26 |       |      |
+| \_    TODO Implement dchan-proxy PoC [4/6]      |             |          | 14:26 |      |
+| \_      DONE Create the basic 9P file server    |             |          |       | 7:03 |
+| \_      DONE Add testing infrastructure         |             |          |       | 4:55 |
+| \_      DONE Test usage of unix socket as...    |             |          |       | 0:29 |
+| \_      DONE Separate testing infrastructure... |             |          |       | 1:59 |
 #+END:
