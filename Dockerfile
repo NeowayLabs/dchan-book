@@ -5,7 +5,7 @@ ENV ORGMK_EL=/gopath/src/github.com/NeowayLabs/dchan/scripts/orgmk.el
 ENV PLAN9=/tmp/plan9
 ENV PATH=$PLAN9/bin:$PATH
 
-ADD sources.list /etc/apt/sources.list
+ADD ./scripts/sources.list /etc/apt/sources.list
 RUN apt-get update -qq
 RUN apt-get install -qq --force-yes emacs24 texlive-latex-recommended
 

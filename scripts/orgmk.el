@@ -52,10 +52,14 @@
         (error "Please upgrade to 8 or later")))))
 
 (when (locate-library "package")
-  (unless (locate-library "htmlize")    ; for syntax highlighting in org2html
-    (let ((pkg 'htmlize))
-      (package-install pkg)
-)))
+  (progn
+    (unless (locate-library "htmlize")    ; for syntax highlighting in org2html
+      (let ((pkg 'htmlize))
+        (package-install pkg)
+        ))
+    (unless (locate-library "ob-go")
+      (let ((pkg 'ob-go))
+        (package-install pkg)))))
 
 ;; version info
 (let ((org-install-dir (file-name-directory (locate-library "org-loaddefs")))
@@ -111,6 +115,7 @@
 (add-to-list 'org-babel-load-languages '(ledger . t)) ; Requires ledger.
 (add-to-list 'org-babel-load-languages '(makefile . t))
 (add-to-list 'org-babel-load-languages '(org . t))
+(add-to-list 'org-babel-load-languages '(go . t))
 (if (locate-library "ob-shell")         ; ob-sh renamed on 2013-12-13
     (add-to-list 'org-babel-load-languages '(shell . t))
   (add-to-list 'org-babel-load-languages '(sh . t)))
