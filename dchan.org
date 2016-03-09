@@ -11,6 +11,8 @@
 
 #+INCLUDE: "README.org" :minlevel 1
 
+#+INCLUDE: "docs/comparisons.org" :minlevel 1
+
 * API
 #+INCLUDE: "docs/api.org" :minlevel 2
 
@@ -118,16 +120,6 @@ install:
 
 %.version: %.org
 	(ver=`date +%s`; cat $< | sed 's/\$$Version:[^$$]*\$$/$$Version: '$$ver' $$/g' > .version-$$ver && mv .version-$$ver $< && echo Versioned $<)
-#+END_SRC
-
-* Building
-
-To build the software and book you need execute:
-
-#+NAME: building
-#+CAPTION: building
-#+BEGIN_SRC bash
-make
 #+END_SRC
 
 # Testing infrastructure

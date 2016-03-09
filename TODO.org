@@ -15,7 +15,10 @@
 
 ** NEXT Make possible download the last version of book
    :LOGBOOK:
-   CLOCK: [2016-03-09 Wed 12:54]--[2016-03-09 Wed 14:34]
+   CLOCK: [2016-03-09 Wed 15:44]--[2016-03-09 Wed 16:23] =>  0:39
+   CLOCK: [2016-03-09 Wed 14:53]--[2016-03-09 Wed 15:35] =>  0:42
+   CLOCK: [2016-03-09 Wed 14:45]--[2016-03-09 Wed 14:49] =>  0:04
+   CLOCK: [2016-03-09 Wed 12:54]--[2016-03-09 Wed 14:34] =>  1:40
    :END:
 
 ** TODO Publish HTML version at each master commit.

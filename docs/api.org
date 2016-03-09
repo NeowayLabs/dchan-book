@@ -1,3 +1,14 @@
+** Desired goals
+
+Dchan have the goals below:
+
+- It must have a simple API;
+- It must support text messages over the wire;
+- It must support composability or inter-dchan communications;
+- It must support unicast and multicast;
+- It must be easy for testing;
+- It must scale;
+
 To achieve the first goal dchan uses a file tree interface over
 network. Simple files (real disk files) aren't suitable for IPC
 because of the global nature of the disk incurring races in concurrent

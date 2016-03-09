@@ -64,138 +64,68 @@ beings what we want a computer to do. \cite{Knuth:1984:LiterateProgramming}
    data, enabling direct inter-process communication without requiring
    service discovery.
 
-** Alternative technologies
+* Dependencies
 
-   Below are some common used technologies for stream processing:
+  To build dchan you'll need the following dependencies installed:
 
-   - Broker (message oriented middlewares)
-     - AMQP
-       - RabbitMQ
-       - Qpid
-       - ActiveMQ
-     - NATS
-     - NSQ
-     - Kafka
-     - Redis
-   - Brokerless (message passing libraries)
-     - ZeroMQ
-     - Nanomsg
-     - Akka (actor concurrency model)
-     - Erlang OTP
+  - Emacs >= 24
+  - [[https://github.com/fniessen/orgmk][orgmk]]
+  - [[https://golang.org][Go]] >= 1.4
+  - [[https://www.gnu.org/software/make/][GNU Make]]
 
-   The brokered solution could be splited into two classes:
+  Tests dependencies (optional):
 
-   - With database capabilities (persistence, guarantees)
-     - RabbitMQ
-     - QPid
-     - ActiveMQ
-     - NSQ
-     - Kafka
-     - Redis
-   - In-memory queues
-     - NATS
+  - [[https://swtch.com/plan9port/][plan9port]]
+  - Bash >= 4
 
-   Using the brokered solutions listed above means that will exists a
-   message queue between every program that consumes data. This queue
-   is called /worker queue/ and can be in-memory or persistent
-   depending on the solution.
+  Book dependencies (optional):
 
-   Some brokers with built-in database can be configured to work as
-   in-memory queues too (RabbitMQ, Qpid, NSQ, Redis), but in this
-   case, to avoid memory starvation, it should use some kind of
-   watermark configuration, to activate persistence, or drop new
-   messages, when the memory is over the threshold (See [[https://www.rabbitmq.com/memory.html][here]], [[http://nsq.io/deployment/production.html][here]],
-   [[http://redis.io/topics/memory-optimization][here]] and [[https://qpid.apache.org/releases/qpid-0.32/cpp-broker/book/chapter-Managing-CPP-Broker.html][here]]).
+  - Latex
+  - Ditaa
 
-   The entire application being down because of OOM in the broker
-   isn't a good option for data processing, then NATS doesn't
-   satisfies the basic requirement. NATS has a simple and good
-   architecture but unusable for data processing because it turns the
-   problem even worst, by automatically disconnecting slow consumers
-   freeing their queues.
+** Archlinux
 
-   The persistence option saves the broker of OOM, but the performance
-   degradation turns the problem even worst for consumers, because now
-   every delivery will hit the disk. For continuous data processing,
-   this means that when the broker hit the watermark, it will never
-   restore the performance of in-memory queues again and database will
-   grow infinitely. In this case, a proper database is desirable
-   instead of a message queue.
+   On archlinux the following command installs almost everything needed:
 
-   Kafka is a distributed commit log service with strong guarantees
-   that can be used as message broker. To avoid memory starvation
-   kafka could be configured to flush data to disk at some time
-   interval (log.flush.interval.ms) or flush when a specific amount of
-   messages exists in memory (log.flush.interval.messages). The last
-   config is much like watermark's configurations, but the
-   difference is that it represents the amount of messages, not a size
-   in memory. Kafka uses the configuration log.retention.hours to
-   determine the amount of time to retain data on disk. The problem of
-   slow consumers could be solved slowing down the producers with
-   quota's settings (quota.publisher.default) being configured by some
-   worker manager.
+#+BEGIN_SRC sh
+sudo pacman -Syy emacs24 make go    \ # software dependencies
+                 plan9port bash     \ # test dependencies
+                 texlive-most ditaa   # book dependencies
 
-   Kafka apparently is the broker most prepared for high volume
-   continuous data processing pipeline, but this have the cost of
-   configurability and tuning.
+#+END_SRC
 
-   The feature that is lacking in all brokers is fixed-size queues
-   with synchronization between publishers and consumers.
+    To install orgmk jump to [[orgmk][orgmk]] section.
 
-   Fixed size queues will avoid memory starvation and with synchronism
-   the publishers will wait until the consumers are ready to get
-   data. The performance of a data pipeline is best measured by the
-   performance of the last services of the chaining, because they're
-   generating the useful, ready-to-be-used, enriched data. If no
-   bottleneck exists in the architecture, with synchronized services
-   what we'll achieve is the same performance throughput across the
-   entire pipeline (the performance of the slowest service).
+    After that, if you want execute dchan tests, you need configure
+    your PATH and GOPATH environment variables.
 
-   Using the brokerless alternatives cited before we can implement the
-   required synchronism and avoid infinite queues, but this requires
-   additional [[http://hintjens.com/blog:32][service discovery capabilities to every micro-service of the
-   architecture]].
+#+BEGIN_SRC sh
+PLAN9=<path-to-plan9port> # commonly /opt/plan9
+export PATH=$PATH:$PLAN9 $PLAN9
+#+END_SRC
 
-** Current situation
+    For GOPATH, read the Go [[https://golang.org/doc/install][Getting Started]].
 
-   Today we use RabbitMQ service for message passing inter-teams and
-   at several places of architecture and apart from the broker
-   problems explained in the last chapter, it proved to be hard
-   to achieve high quality code.
+** orgmk
 
-   AMQP (Advanced Message Queue Protocol) is a complex bad designed
-   specification protocol and because of that, client libraries are
-   huge and sometimes buggy. On top of a huge library, the
-   specification still imposes a lot of client code to achieve
-   durability and reliability. That big amount of code (and tests)
-   needs to be written in the correct manner and must be correctly
-   tested. Testing is hard because the need for a central complete
-   broker (not easy to mock with libraries) and some way to start/stop
-   the broker for test re-connection and guarantees (durability). In
-   simple words: hard to achieve good quality code.
+   We don't use the default orgmk elisp, but a modified version
+   configured for our project. To build orgmk, then use the commands
+   below:
 
-   For more information about this kind of problems, read the article
-   below from one of the AMQP creators:
+#+BEGIN_SRC sh
+cd <some-place>
+git clone https://github.com/fniessen/orgmk.git
+cd orgmk
+ORGMK_EL=<path-to-dchan>/scripts/orgmk.el make -e
+sudo make install
+#+END_SRC
 
-   http://www.imatix.com/articles:whats-wrong-with-amqp/
+   The commands above will install orgmk on /usr/local/bin but using
+   the emacs init elisp from dchan directory. If you use orgmk for
+   other projects then you should install orgmk on another place.
 
-   Other problem is that AMQP specification does not say any words
-   about synchronism between publishers and consumers of queues, and
-   the broker is designed to be a complete database to store the
-   difference between throughput of clients. Sometimes this is a
-   desired behavior, but sometimes it is not. If you have a low
-   traffic messaging, it works, but using the message broker as a
-   database for a large dataset processing requires more database
-   capabilities in the broker than messaging (and AMQP is a messaging
-   protocol).
+** Building
 
-** Desired goals
-
-Dchan have the goals below:
-
-- It must have a simple API;
-- It must support text messages over the wire;
-- It must support composability or inter-dchan communications;
-- It must support unicast and multicast;
-- It must be easy for testing;
-- It must scale;
+   Executing /make/ will build the software, execute tests and build
+   the book (pdf, html and txt). But you can run /make build/ or /make
+   test/ independently.
