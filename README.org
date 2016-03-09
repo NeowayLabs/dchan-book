@@ -25,8 +25,10 @@ computer what to do, let us concentrate rather on explaining to human
 beings what we want a computer to do. \cite{Knuth:1984:LiterateProgramming}
 #+END_QUOTE
 
-  This book is the only source for design ideas, code, documentation and
-  tests. From here, we build everything.
+  This book is the only source for design ideas, code, documentation,
+  tests and project management. From it we build everything.
+
+  You can download the book [[http://neowaylabs.github.io/dchan/dchan.pdf][here]] or read the html version [[http://neowaylabs.github.io/dchan/index.html][here]].
 
 ** Why dchan?
 
@@ -94,7 +96,7 @@ sudo pacman -Syy emacs24 make go    \ # software dependencies
 
 #+END_SRC
 
-    To install orgmk jump to [[orgmk][orgmk]] section.
+    To install orgmk jump to [[Orgmk][Orgmk]] section.
 
     After that, if you want execute dchan tests, you need configure
     your PATH and GOPATH environment variables.
@@ -106,7 +108,7 @@ export PATH=$PATH:$PLAN9 $PLAN9
 
     For GOPATH, read the Go [[https://golang.org/doc/install][Getting Started]].
 
-** orgmk
+** Orgmk
 
    We don't use the default orgmk elisp, but a modified version
    configured for our project. To build orgmk, then use the commands
