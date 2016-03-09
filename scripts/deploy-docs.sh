@@ -1,5 +1,8 @@
 #!/bin/bash
-set -e # exit with nonzero exit code if anything fails
+
+# Build script based on https://gist.github.com/domenic/ec8b0fc8ab45f39403dd
+
+set -e
 
 if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then
     exit 0
@@ -13,7 +16,6 @@ fi
 rm -rf out || exit 0;
 mkdir out;
 
-# run our compile script, discussed above
 make dchan.pdf
 make dchan.html
 make dchan.txt
@@ -31,12 +33,8 @@ git init
 git config user.name "Travis CI"
 git config user.email "tiago4orion@gmail.com"
 
-# The first and only commit to this new Git repo contains all the
-# files present with the commit message "Deploy to GitHub Pages".
 git add .
 git commit -m "Deploy to GitHub Pages"
-
-# git remote add origin git@github.com:NeowayLabs/dchan.github.io.git
 
 # Force push from the current repo's master branch to the remote
 # repo's gh-pages branch. (All previous history on the gh-pages branch
