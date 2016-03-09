@@ -34,6 +34,20 @@ clean:
 #+BEGIN_SRC sh :tangle tests/acceptance/vfs.sh :shebang #!/bin/bash
 . ../testing/helpers.sh
 
+BACKENDPID=""
+
+function start9pserver {
+    local cwd="$(pwd)"
+
+    cd ${GOPATH}/src/github.com/lionkov/go9p/p/srv/examples/clonefs/
+    go build -v
+    ./clonefs -addr ":6666" -d &
+
+    BACKENDPID=$!
+
+    cd "${cwd}"
+}
+
 function changedir {
     local targetdir="$1"
 
@@ -45,11 +59,18 @@ function changedir {
     fi
 }
 
-setup "/tmp/dchan-proxy" "unix!/tmp/dchan-proxy.sock" "$(pwd)/dchan-proxy -addr /tmp/dchan-proxy.sock -d"
+# Running backend 9P file server
+
+start9pserver
+
+rm -f /tmp/dchan-proxy.sock
+setup "/tmp/dchan-proxy" "unix!/tmp/dchan-proxy.sock" "$(pwd)/proxy -laddr unix:///tmp/dchan-proxy.sock -raddr 'localhost:6666'"
 
 changedir "/tmp/dchan-proxy"
 
 teardown "/tmp/dchan-proxy" "${DAEMONPID}"
+
+kill ${BACKENDPID}
 #+END_SRC
 
 ** Proxy implementation

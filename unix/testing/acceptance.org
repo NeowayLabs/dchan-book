@@ -95,7 +95,17 @@ function setup {
 
     if [ "$?" != "0" ]; then
         echo "Failed to enter into dchan directory"
-        teardown "${dchandir}" "${DCHANPID}"
+        teardown "${targetdir}" "${DCHANPID}"
+        exit 1
+    fi
+
+    echo "###########################"
+    mount | grep "${targetdir}"
+    echo "###########################"
+
+    if [ "`mount | grep \"${targetdir}\"`" == "" ]; then
+        echo "Not mounted yet. Try again with higher delay time..."
+        teardown "${targetdir}" "${DAEMONPID}"
         exit 1
     fi
 }
