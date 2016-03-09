@@ -47,6 +47,7 @@
      :END:
 **** NEXT Implement the proxy as a pure TCP-proxy
      :LOGBOOK:
+     CLOCK: [2016-03-09 Wed 10:10]
      CLOCK: [2016-03-08 Tue 17:00]--[2016-03-08 Tue 19:16] =>  2:16
      CLOCK: [2016-03-08 Tue 16:36]--[2016-03-08 Tue 16:53] =>  0:17
      :END:
@@ -67,7 +68,7 @@
 *** TODO LoC on client side (dchan vs amqp)
 
 #+BEGIN: clocktable :maxlevel 4 :scope file
-#+CAPTION: Clock summary at [2016-03-08 Tue 19:16]
+#+CAPTION: Clock summary at [2016-03-08 Tue 19:27]
 | Headline                                        | Time        |          |       |      |
 |-------------------------------------------------+-------------+----------+-------+------|
 | *Total time*                                    | *24d 14:47* |          |       |      |
