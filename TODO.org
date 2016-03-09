@@ -13,7 +13,10 @@
    CLOCK: [2016-03-04 Fri 09:05]--[2016-03-04 Fri 19:00] =>  9:55
    :END:
 
-** TODO Make possible download the last version of book
+** NEXT Make possible download the last version of book
+   :LOGBOOK:
+   CLOCK: [2016-03-09 Wed 12:54]
+   :END:
 
 ** TODO Publish HTML version at each master commit.
 
