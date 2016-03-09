@@ -19,6 +19,7 @@ make dchan.html
 make dchan.txt
 
 cp dchan.pdf dchan.html dchan.txt out
+cp -R images out
 
 # go to the out directory and create a *new* Git repo
 cd out
