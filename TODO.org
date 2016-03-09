@@ -72,21 +72,21 @@
 *** TODO LoC on client side (dchan vs amqp)
 
 #+BEGIN: clocktable :maxlevel 4 :scope file
-#+CAPTION: Clock summary at [2016-03-08 Tue 19:27]
+#+CAPTION: Clock summary at [2016-03-09 Wed 12:52]
 | Headline                                        | Time        |          |       |      |
 |-------------------------------------------------+-------------+----------+-------+------|
-| *Total time*                                    | *24d 14:47* |          |       |      |
+| *Total time*                                    | *24d 17:29* |          |       |      |
 |-------------------------------------------------+-------------+----------+-------+------|
-| Dchan [4/6]                                     | 24d 14:47   |          |       |      |
+| Dchan [4/8]                                     | 24d 17:29   |          |       |      |
 | \_  DONE Plan9 Research and Proof of Concept    |             | 23d 0:00 |       |      |
 | \_  DONE Add travis-ci integration              |             |    10:20 |       |      |
 | \_  DONE Design of dchan-proxy                  |             |     9:16 |       |      |
-| \_  Dchan-proxy [0/2]                           |             |    19:11 |       |      |
-| \_    TODO Implement dchan-proxy PoC [5/6]      |             |          | 19:11 |      |
+| \_  Dchan-proxy [0/2]                           |             |    21:53 |       |      |
+| \_    TODO Implement dchan-proxy PoC [6/6]      |             |          | 21:53 |      |
 | \_      DONE Create the basic 9P file server    |             |          |       | 7:03 |
 | \_      DONE Add testing infrastructure         |             |          |       | 4:55 |
 | \_      DONE Test usage of unix socket as...    |             |          |       | 1:29 |
 | \_      DONE Separate testing infrastructure... |             |          |       | 1:59 |
 | \_      DONE Study the Go API for 9P clients... |             |          |       | 1:12 |
-| \_      NEXT Implement the proxy as a pure...   |             |          |       | 2:33 |
+| \_      DONE Implement the proxy as a pure...   |             |          |       | 5:15 |
 #+END:
