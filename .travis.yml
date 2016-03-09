@@ -18,7 +18,7 @@ before_install:
   - curl https://repogen.simplylinux.ch/txt/sources_52e6d80fad9c7b2d617f3c30b5fef19e6b154d32.txt| sudo tee /etc/apt/sources.list
   - sudo apt-get update -qq
   - sudo apt-get install -y emacs24
-  - sudo apt-get install -y texlive-latex-recommended texlive-full
+  - sudo apt-get install -y -o Dpkg::Options::="--force-confnew" texlive-full
   - sudo apt-get install -y ditaa
   - sudo mkdir -p /usr/share/emacs/24.4/lisp/contrib/scripts/ && sudo cp /usr/share/ditaa/ditaa.jar /usr/share/emacs/24.4/lisp/contrib/scripts/ditaa.jar
   - sudo pip install codecov
