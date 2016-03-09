@@ -20,7 +20,7 @@ before_install:
   - sudo apt-get install -y emacs24
   - sudo apt-get install -y texlive-latex-recommended
   - sudo apt-get install -y ditaa
-  - cp /usr/bin/ditaa usr/share/emacs/24.4/lisp/contrib/scripts/ditaa.jar
+  - sudo mkdir -p usr/share/emacs/24.4/lisp/contrib/scripts/ && sudo cp /usr/bin/ditaa usr/share/emacs/24.4/lisp/contrib/scripts/ditaa.jar
   - sudo pip install codecov
   - cd /tmp && git clone https://github.com/fniessen/orgmk
   - cd /tmp/orgmk && ORGMK_EL=$HOME/gopath/src/github.com/NeowayLabs/dchan/scripts/orgmk.el make -e && sudo make install
