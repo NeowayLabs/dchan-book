@@ -39,6 +39,7 @@ BACKENDPID=""
 function start9pserver {
     local cwd="$(pwd)"
 
+    go get -v -u github.com/lionkov/go9p
     cd ${GOPATH}/src/github.com/lionkov/go9p/p/srv/examples/clonefs/
     go build -v
     ./clonefs -addr ":6666" -d &
