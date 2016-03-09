@@ -6,7 +6,8 @@
 #+TAGS: PROJECT(p)
 #+STARTUP: hidestars
 
-#+INCLUDE: "tex/latex.setup"
+#+INCLUDE: "orgconf/latex.setup"
+#+SETUPFILE: orgconf/theme-bigblow.setup
 
 #+INCLUDE: "README.org" :minlevel 1
 
