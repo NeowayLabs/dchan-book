@@ -77,11 +77,11 @@ kill ${BACKENDPID}
 ** Proxy implementation
 
    Dchan-proxy is a pure TCP proxy that knows nothing about 9P or
-   dchan internal working. It only bypass network packets to
-   destination server. The difference is that it never fail to
-   clients. If the backend server goes down or network link is down,
-   it will not return any bytes to client until it successfull
-   reconnects with backend server.
+   dchan internal working. It only bypass local network packets (from
+   unix socket or loopback tcp port) to remote destination server. The
+   difference is that it never fail to clients. If the backend server
+   goes down or network link is down, it will not return any bytes to
+   client until it successfully reconnects with backend server.
 
 *** Main
 
@@ -90,10 +90,12 @@ kill ${BACKENDPID}
    - laddr: URI to listen on
    - raddr: URI to TCP remote address
 
+   By default it binds to unix socket on file /tmp/dchan-proxy.sock.
+
 #+NAME: src-dchan-proxy-flags
 #+BEGIN_SRC go
 var (
-	laddr *string = flag.String("laddr", "unix:///var/run/dchan-proxy.sock", "local address")
+	laddr *string = flag.String("laddr", "unix:///tmp/dchan-proxy.sock", "local address")
 	raddr *string = flag.String("raddr", "", "remote address")
 )
 #+END_SRC
@@ -117,8 +119,8 @@ func main() {
 
 	flag.Parse()
 
-	if *laddr == "" || *raddr == "" {
-		fmt.Printf("-laddr and -raddr are required.\n")
+	if *raddr == "" {
+		fmt.Printf("-raddr is required.\n")
 		os.Exit(1)
 	}
 
@@ -131,67 +133,24 @@ func main() {
 
 #+END_SRC
 
-#+RESULTS:
+*** Core package
 
-*** Proxy package
+    The core package is responsible for the magic. It starts the
+    socket server and the go-routines to handle the requests.
 
-    The proxy package is responsible for the magic. It starts the
-    socket server and the goroutines to handle the requests.
+    Start function first discover the type of socket for the local server to
+    use the generic net.Listen function. Then it starts listening on
+    configured local address for incoming connections.
 
-    Start resolves the local address and starts listening on
-    configured local port for incoming connections.
+    For every new connection, it calls handleProxy in a new
+    go-routine. A new go-routine for each connection is required
+    because 9P is a stateful protocol, this means the network
+    connection will stay established until client disconnects (unmount
+    the file system). We can limit the max number of clients in the
+    future.
 
 #+NAME: src-proxy-core-fn-start
 #+BEGIN_SRC go
-// chanFromConn creates a channel from a Conn object, and sends everything it
-//  Read()s from the socket to the channel.
-func chanFromConn(conn net.Conn) chan []byte {
-    c := make(chan []byte)
-
-    go func() {
-        b := make([]byte, 1024)
-
-        for {
-            n, err := conn.Read(b)
-            if n > 0 {
-                res := make([]byte, n)
-                // Copy the buffer so it doesn't get changed while read by the recipient.
-                copy(res, b[:n])
-                c <- res
-            }
-            if err != nil {
-                c <- nil
-                break
-            }
-        }
-    }()
-
-    return c
-}
-
-// Pipe creates a full-duplex pipe between the two sockets and transfers data from one to the other.
-func Pipe(conn1 net.Conn, conn2 net.Conn) {
-    chan1 := chanFromConn(conn1)
-    chan2 := chanFromConn(conn2)
-
-    for {
-        select {
-        case b1 := <-chan1:
-            if b1 == nil {
-                return
-            } else {
-                conn2.Write(b1)
-            }
-        case b2 := <-chan2:
-            if b2 == nil {
-                return
-            } else {
-                conn1.Write(b2)
-            }
-        }
-    }
-}
-
 func Start(laddr, raddr string) error {
 	var (
 		nettype, addrval string
@@ -222,25 +181,106 @@ func Start(laddr, raddr string) error {
 			panic(err)
 		}
 
-                go func() {
-			rAddr, err := net.ResolveTCPAddr("tcp", raddr)
-			if err != nil {
-				panic(err)
-			}
-
-			rConn, err := net.DialTCP("tcp", nil, rAddr)
-
-			if err != nil {
-				panic(err)
-			}
-
-			defer rConn.Close()
-
-			Pipe(conn, rConn)
-
-			conn.Close()
-		}()
+                go handleProxy(conn, raddr)
 	}
+}
+#+END_SRC
+
+    HandleProxy establish a new connection with the backend 9P server
+    and starts piping data from remote socket to the local one using
+    the Pipe function. When there's no more data to read or write to
+    remote destination, handleProxy close both connections.
+
+    The Pipe is based on the blog post below:
+
+    https://www.stavros.io/posts/proxying-two-connections-go/
+
+    It was not possible to use plain io.Copy because we have
+    requirements about network failures.
+
+#+NAME: src-proxy-core-fn-handleProxy
+#+BEGIN_SRC go
+func handleProxy(conn net.Conn, raddr string) {
+	addr, err := net.ResolveTCPAddr("tcp", raddr)
+	if err != nil {
+		panic(err)
+	}
+
+	rConn, err := net.DialTCP("tcp", nil, addr)
+
+	if err != nil {
+		panic(err)
+	}
+
+	defer func() {
+		rConn.Close()
+		conn.Close()
+        }()
+
+	Pipe(conn, rConn)
+}
+#+END_SRC
+
+    Pipe creates a full-duplex pipe between the two sockets and
+    transfers data from one to the other.
+
+#+NAME: src-proxy-core-fn-pipe
+#+BEGIN_SRC go
+func Pipe(conn1 net.Conn, conn2 net.Conn) {
+    chan1 := chanFromConn(conn1)
+    chan2 := chanFromConn(conn2)
+
+    for {
+        select {
+        case b1 := <-chan1:
+            if b1 == nil {
+                return
+            } else {
+                conn2.Write(b1)
+            }
+        case b2 := <-chan2:
+            if b2 == nil {
+                return
+            } else {
+                conn1.Write(b2)
+            }
+        }
+    }
+}
+#+END_SRC
+
+    ChanFromConn creates a channel from a Conn object, and sends
+    everything it Read()s from the socket to the channel. It makes by
+    creating a new go-routine for reading data on the connection and
+    copying it to destination channel. Data is copied to avoid races
+    with channel's consumer.
+
+    If something bad occurs reading the connection, then a nil is sent
+    over the channel. TODO: maybe close is a better semantics.
+
+#+NAME: src-proxy-core-fn-chanfromconn
+#+BEGIN_SRC go
+func chanFromConn(conn net.Conn) chan []byte {
+    c := make(chan []byte)
+
+    go func() {
+        b := make([]byte, 1024)
+
+        for {
+            n, err := conn.Read(b)
+            if n > 0 {
+                res := make([]byte, n)
+                copy(res, b[:n])
+                c <- res
+            }
+            if err != nil {
+                c <- nil
+                break
+            }
+        }
+    }()
+
+    return c
 }
 #+END_SRC
 
@@ -251,6 +291,9 @@ import (
 	"net"
 )
 
+<<src-proxy-core-fn-chanfromconn>>
+<<src-proxy-core-fn-pipe>>
+<<src-proxy-core-fn-handleProxy>>
 <<src-proxy-core-fn-start>>
 
 #+END_SRC
