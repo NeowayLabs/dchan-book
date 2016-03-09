@@ -6,9 +6,9 @@ go:
 env:
   - PLAN9=/tmp/plan9 PATH=$PATH:$PLAN9/bin
 install:
-  - cd $HOME/gopath/src/github.com/NeowayLabs/dchan && make tangle && make tangle-src && go get -v ./unix/dchan/... && make build
+  - cd $HOME/gopath/src/github.com/NeowayLabs/dchan && make build
 script:
-  - cd unix/dchan && go test -v ./...
+  - make test
 before_install:
   - sudo rm /etc/dpkg/dpkg.cfg.d/multiarch
   - curl https://repogen.simplylinux.ch/txt/sources_52e6d80fad9c7b2d617f3c30b5fef19e6b154d32.txt | sudo tee /etc/apt/sources.list
