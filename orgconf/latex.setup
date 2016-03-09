@@ -1,7 +1,7 @@
 #+LATEX_CLASS: book
 #+LATEX_HEADER: \usepackage{color}
 #+LATEX_HEADER: \usepackage{listings}
-#+LATEX_HEADER: \usepackage{tex/listings-go}
+#+LATEX_HEADER: \usepackage{orgconf/listings-go}
 
 #+begin_latex
 \lstset{

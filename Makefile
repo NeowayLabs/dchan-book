@@ -10,10 +10,10 @@
 # To install `dchan', type `make' and then `make install'.
 BIN_DIR=/usr/local/bin
 DCHAN_SRC=$(wildcard unix/dchan/*.org)
-PROXY_SRC=$(wildcard unix/dchan-proxy/*.org)
+PROXY_SRC=$(wildcard unix/proxy/*.org)
 TEST_SRC=$(wildcard unix/testing/*.org)
 OBJS=	unix/dchan/dchan \
-	unix/dchan-proxy/dchan-proxy
+	unix/proxy/proxy
 DOC_BOOK=dchan.org
 HTMLS=$(patsubst %.org,%.html,$(DOC_BOOK))
 TXTS=$(patsubst %.org,%.txt,$(DOC_BOOK))
@@ -26,7 +26,7 @@ clean-latex:
 
 clean-source:
 	-cd unix/dchan/ && make clean
-	-cd unix/dchan-proxy/ && make clean
+	-cd unix/proxy/ && make clean
 
 clean: tangle clean-latex clean-source
 	rm -f *.pngt
@@ -56,12 +56,12 @@ tangle-src:
 
 build: tangle-src
 	cd unix/dchan/ && make build
-	cd unix/dchan-proxy/ && make build
+	cd unix/proxy/ && make build
 
 doc: $(HTMLS) $(PDFS) $(TXTS)
 
 test: tangle-src
-	cd unix/dchan-proxy/ && make test
+	cd unix/proxy/ && make test
 
 install:
 	cp $(OBJS) $(BIN_DIR)
