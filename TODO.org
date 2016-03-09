@@ -1,4 +1,4 @@
-* Dchan [4/6]                                                         :dchan:
+* Dchan [4/8]                                                         :dchan:
 ** DONE Plan9 Research and Proof of Concept
    :LOGBOOK:
    CLOCK: [2016-01-11 Mon 15:00]--[2016-02-03 Tue 15:00] => 552:00
@@ -13,13 +13,17 @@
    CLOCK: [2016-03-04 Fri 09:05]--[2016-03-04 Fri 19:00] =>  9:55
    :END:
 
+** TODO Make possible download the last version of book
+
+** TODO Publish HTML version at each master commit.
+
 ** DONE Design of dchan-proxy
    :LOGBOOK:
    CLOCK: [2016-02-29 Mon 09:15]--[2016-02-29 Mon 18:31] =>  9:16
    :END:
 
 ** Dchan-proxy [0/2]                                                  :proxy:
-*** TODO Implement dchan-proxy PoC [5/6]
+*** TODO Implement dchan-proxy PoC [6/6]
     SCHEDULED: <2016-03-08 Tue> DEADLINE: <2016-03-18 Fri>
     :PROPERTIES:
     :ORDERED:  t
@@ -45,9 +49,9 @@
      :LOGBOOK:
      CLOCK: [2016-03-08 Tue 15:21]--[2016-03-08 Tue 16:33] =>  1:12
      :END:
-**** NEXT Implement the proxy as a pure TCP-proxy
+**** DONE Implement the proxy as a pure TCP-proxy
      :LOGBOOK:
-     CLOCK: [2016-03-09 Wed 10:10]
+     CLOCK: [2016-03-09 Wed 10:10]--[2016-03-09 Wed 12:52] =>  2:42
      CLOCK: [2016-03-08 Tue 17:00]--[2016-03-08 Tue 19:16] =>  2:16
      CLOCK: [2016-03-08 Tue 16:36]--[2016-03-08 Tue 16:53] =>  0:17
      :END:
