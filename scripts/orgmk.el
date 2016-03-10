@@ -56,7 +56,10 @@
     (unless (locate-library "htmlize")    ; for syntax highlighting in org2html
       (let ((pkg 'htmlize))
         (package-install pkg)
-        ))))
+        ))
+    (unless (locate-library "go-mode")
+      (let ((pkg 'go-mode))
+        (package-install pkg)))))
 
 (load (concat  (file-name-directory load-file-name) "ob-go.el"))
 
