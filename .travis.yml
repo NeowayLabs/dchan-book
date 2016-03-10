@@ -12,7 +12,7 @@ install:
   - cd $HOME/gopath/src/github.com/NeowayLabs/dchan && make build
 script:
   - make test
-  - bash -x ./scripts/deploy-docs.sh
+  - bash ./scripts/deploy-docs.sh
 before_install:
   - sudo rm /etc/dpkg/dpkg.cfg.d/multiarch
   - curl https://repogen.simplylinux.ch/txt/sources_52e6d80fad9c7b2d617f3c30b5fef19e6b154d32.txt| sudo tee /etc/apt/sources.list
