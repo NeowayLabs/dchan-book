@@ -19,7 +19,7 @@ HTMLS=$(patsubst %.org,%.html,$(DOC_BOOK))
 TXTS=$(patsubst %.org,%.txt,$(DOC_BOOK))
 PDFS=$(patsubst %.org,%.pdf,$(DOC_BOOK))
 
-all: clean $(OBJ) $(HTMLS) $(TXTS) $(PDFS)
+all: clean $(OBJ) test $(HTMLS) $(TXTS) $(PDFS)
 
 clean-latex:
 	rm -f *.blg *.bbl *.tex *.odt *.toc *.out *.aux
