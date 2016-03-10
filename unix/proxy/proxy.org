@@ -184,6 +184,8 @@ func Pipe(lConn net.Conn, rConn net.Conn) error {
 }
 #+END_SRC
 
+    Pipe unit tests can be seen [[Pipe testcases][here]].
+
 *** Main
 
    Dchan-proxy receives only two command-line parameters:
@@ -385,16 +387,17 @@ func (c *MyConn) Write(d []byte) (int, error) {
 func (c *MyConn) Read(d []byte) (int, error) {
 	var i int
 
-        if c.counter >= 5 {
-		return 0, errors.New("Connection error")
-	}
-
 read:
 	c.Lock()
 
+        if c.counter >= 5 {
+		c.Unlock()
+		return 0, errors.New("Connection error")
+	}
+
         if len(c.buffer) == 0 {
 		c.Unlock()
-		time.Sleep(100 * time.Nanosecond)
+		time.Sleep(100 * time.Millisecond)
 		goto read
 	}
 
@@ -402,11 +405,10 @@ read:
 		d[i] = c.buffer[i]
 	}
 
-        c.buffer = c.buffer[i:]
+	c.buffer = c.buffer[i:]
+	c.counter += 1
 
 	c.Unlock()
-
-        c.counter += 1
 
 	return i, nil
 }
@@ -501,11 +503,65 @@ func TestChanfromconn2(t *testing.T) {
 
 #+NAME: src-proxy-core-tests-chanfromconn
 #+HEADER: :imports '("net" "testing" "time" "sync" "errors")
-#+BEGIN_SRC go :noweb yes :tangle core/chanfromconn_test.go :comments yes :package core :main no
+#+BEGIN_SRC go :noweb yes :tangle core/chanfromconn_test.go :comments yes :package core :main no :exports none
 
 <<src-proxy-core-tests-myconn-new>>
 <<src-proxy-core-tests-myconn-impl>>
 
 <<src-proxy-core-tests-1>>
 <<src-proxy-core-tests-2>>
+#+END_SRC
+
+*** Pipe testcases
+
+    The Pipe function have the following test cases:
+
+    1. Every byte written on one channel must be written on the other;
+    2. If reading /lChan/ returns nil, then Pipe must return successfully;
+    3. If reading /rChan/ returns nil, then Pipe must return an error;
+
+#+NAME: src-proxy-core-tests-pipe-1
+#+BEGIN_SRC go
+func TestPipe1(t *testing.T) {
+	lConn := newMockConn()
+	rConn := newMockConn()
+
+        go func() {
+		err := Pipe(lConn, rConn)
+
+		if err != nil {
+			t.Error(err)
+		}
+	}()
+
+	lConn.Write([]byte("teste"))
+
+	data := make([]byte, 5)
+
+	n, err := rConn.Read(data)
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if n != 5 {
+		t.Errorf("Expected 5 bytes, received %d", n)
+		return
+	}
+
+	if string(data) != "teste" {
+		t.Errorf("Expected '%s' but received '%s'",
+			"teste", string(data))
+	}
+}
+#+END_SRC
+
+
+
+#+NAME: src-proxy-core-tests-pipe
+#+HEADER: :main no :package core
+#+HEADER: :imports '("testing")
+#+BEGIN_SRC go :noweb yes :tangle core/pipe_test.go
+<<src-proxy-core-tests-pipe-1>>
 #+END_SRC
