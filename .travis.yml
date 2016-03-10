@@ -4,10 +4,10 @@ go:
 - tip
 env:
   global:
-    - secure: "TA4S7GidJjp/p8M/ecRCdeVwbqakd3U/v5t4TN/c1E56yhqwR4659EVlMhaDlsZQLaJ6fUGU/g5kKl5BRBNpFwNyUmxv3KldnpQzj6nblfRhhNlqx1Yh8CCRpwrjOJwsjZ0OmbgXrMcA3JICHPWA2GFDuAyBRU2hdtIyPP2zWo7Lq8PG67vsYA/fOKzRKtBXyz5ui2ti0eZV+nRjhv4M7jSHmmZr/oMzdmMyXuFMMyaWMPbD0pXzUh/zq5Rzv6F/NZZaLtem+1AMV3actnuyxuwM266QvSw9ZQk4iA7dE5zx5JNwCz6eIeZ/ZX29mP3Z2AkIXLVrLPx022gH/HdB18BIviUb2FE/xSdeeswuLiZQpdeh1meER1rHVeHArw+gBDvEhkaYXSqcBIttqTmJeJZHFGl/ONLU7BYbD54HLEfL/IVeLJQBKH/ML66aiofg5eof659ShYZ3VT5M96mjFnufSTJIPg8tKrBG9AnYCCEHSA2vJlS3Hn6cLzv5RdBZBgIetrsdpoK7/g8a1ysOWDU84JxQBhxMisOpmKr53nsufXAeq4T1b6F6OI2cF2mZ5I80aab9w74XEbouHmE5c92bBDhgWTOFgkc2RswoJ4ZKUk5UGCHJmzTMZ4XZ7NeTrylRP7HlL1W1+OmiP4ngtmO96nTsyWlRlz1V+9mBU/g="
-    - GH_REF=github.com/NeowayLabs/dchan.git
-    - PLAN9=/tmp/plan9
-    - PATH=$PATH:$PLAN9/bin
+  - secure: "TA4S7GidJjp/p8M/ecRCdeVwbqakd3U/v5t4TN/c1E56yhqwR4659EVlMhaDlsZQLaJ6fUGU/g5kKl5BRBNpFwNyUmxv3KldnpQzj6nblfRhhNlqx1Yh8CCRpwrjOJwsjZ0OmbgXrMcA3JICHPWA2GFDuAyBRU2hdtIyPP2zWo7Lq8PG67vsYA/fOKzRKtBXyz5ui2ti0eZV+nRjhv4M7jSHmmZr/oMzdmMyXuFMMyaWMPbD0pXzUh/zq5Rzv6F/NZZaLtem+1AMV3actnuyxuwM266QvSw9ZQk4iA7dE5zx5JNwCz6eIeZ/ZX29mP3Z2AkIXLVrLPx022gH/HdB18BIviUb2FE/xSdeeswuLiZQpdeh1meER1rHVeHArw+gBDvEhkaYXSqcBIttqTmJeJZHFGl/ONLU7BYbD54HLEfL/IVeLJQBKH/ML66aiofg5eof659ShYZ3VT5M96mjFnufSTJIPg8tKrBG9AnYCCEHSA2vJlS3Hn6cLzv5RdBZBgIetrsdpoK7/g8a1ysOWDU84JxQBhxMisOpmKr53nsufXAeq4T1b6F6OI2cF2mZ5I80aab9w74XEbouHmE5c92bBDhgWTOFgkc2RswoJ4ZKUk5UGCHJmzTMZ4XZ7NeTrylRP7HlL1W1+OmiP4ngtmO96nTsyWlRlz1V+9mBU/g="
+  - GH_REF=github.com/NeowayLabs/dchan.git
+  - PLAN9=/tmp/plan9
+  - PATH=$PATH:$PLAN9/bin
 install:
   - cd $HOME/gopath/src/github.com/NeowayLabs/dchan && make build
 script:
