@@ -12,6 +12,7 @@ build: tangle
 	go build -v
 
 test: tangle build
+	go test -v -race ./...
 	chmod +x tests/acceptance/*.sh
 	./tests/acceptance/vfs.sh
 
@@ -80,8 +81,108 @@ kill ${BACKENDPID}
    dchan internal working. It only bypass local network packets (from
    unix socket or loopback tcp port) to remote destination server. The
    difference is that it never fail to clients. If the backend server
-   goes down or network link is down, it will not return any bytes to
+   crash or network link is down, it will not return any bytes to
    client until it successfully reconnects with backend server.
+
+   The Go implementation of the proxy has heavy use of CSP channels to
+   pipe data from one connection to the other, not interested in the
+   content.
+
+   The algorithm for this pipe is based on the following ideas:
+
+   1. For the listener connection /lConn/, create a channel /lChan/ and
+      a go-routine reading bytes from /lConn/ and writing into
+      /lChan/.
+
+   2. For the remote connection /rConn/, create a channel /rChan/ and
+      a go-routine reading bytes from /rConn/ and writing into /rChan/.
+
+   3. The piping process is an infinite loop with a non-deterministic
+      choice (select) operation writing everything read from /lChan/
+      into /rConn/ and everything read from /rChan/ into /lConn/.
+
+
+    The first two steps are achieved by /chanFromConn/ function.
+
+    ChanFromConn creates a channel /c/ and sends everything it reads from the socket
+    connection /conn/ into /c/. It makes by creating a new go-routine
+    for reading data on the connection and copying it to destination
+    channel. Data is copied to avoid races with channel's consumer.
+
+    If something bad occurs reading /conn/, then the channel /c/ is
+    closed to notify the consumer that /conn/ is down, requiring a
+    re-connect.
+
+    It returns a receive-only (unidirectional) channel containing data
+    read from connection.
+
+#+NAME: src-proxy-core-fn-chanfromconn
+#+BEGIN_SRC go
+func chanFromConn(conn net.Conn) <-chan []byte {
+	c := make(chan []byte)
+
+	go func() {
+		b := make([]byte, 1024)
+
+		for {
+			n, err := conn.Read(b)
+
+			if n > 0 {
+				res := make([]byte, n)
+				copy(res, b[:n])
+				c <- res
+			}
+
+			if err != nil {
+				close(c)
+				break
+			}
+		}
+	}()
+
+	return c
+}
+#+END_SRC
+
+    ChanFromConn unit tests can be seen [[ChanFromConn testcases][here]].
+
+    The third step is handled by /Pipe/ function.
+
+    Pipe creates a full-duplex pipe between the two sockets /lConn/
+    and /rConn/, and transfers data from one to the other (see
+    [[Non-deterministic choice][Non-deterministic choice]]).
+
+    If a nil is received on /lChan/, this means that client
+    disconnects.
+    If a nil is received on /rChan/, this means that remote backend
+    closed the connection or a network error occurred.
+
+#+NAME: src-proxy-core-fn-pipe
+#+BEGIN_SRC go
+func Pipe(lConn net.Conn, rConn net.Conn) error {
+	lChan := chanFromConn(lConn)
+	rChan := chanFromConn(rConn)
+
+	for {
+		select {
+		case b1 := <-lChan:
+			if b1 == nil {
+				return nil
+			} else {
+				rConn.Write(b1)
+			}
+		case b2 := <-rChan:
+			if b2 == nil {
+				return errors.New("connection error")
+			} else {
+				lConn.Write(b2)
+			}
+		}
+	}
+
+	panic("unreachable")
+}
+#+END_SRC
 
 *** Main
 
@@ -221,74 +322,12 @@ func handleProxy(conn net.Conn, raddr string) {
 }
 #+END_SRC
 
-    Pipe creates a full-duplex pipe between the two sockets and
-    transfers data from one to the other.
-
-#+NAME: src-proxy-core-fn-pipe
-#+BEGIN_SRC go
-func Pipe(conn1 net.Conn, conn2 net.Conn) {
-    chan1 := chanFromConn(conn1)
-    chan2 := chanFromConn(conn2)
-
-    for {
-        select {
-        case b1 := <-chan1:
-            if b1 == nil {
-                return
-            } else {
-                conn2.Write(b1)
-            }
-        case b2 := <-chan2:
-            if b2 == nil {
-                return
-            } else {
-                conn1.Write(b2)
-            }
-        }
-    }
-}
-#+END_SRC
-
-    ChanFromConn creates a channel from a Conn object, and sends
-    everything it Read()s from the socket to the channel. It makes by
-    creating a new go-routine for reading data on the connection and
-    copying it to destination channel. Data is copied to avoid races
-    with channel's consumer.
-
-    If something bad occurs reading the connection, then a nil is sent
-    over the channel. TODO: maybe close is a better semantics.
-
-#+NAME: src-proxy-core-fn-chanfromconn
-#+BEGIN_SRC go
-func chanFromConn(conn net.Conn) chan []byte {
-    c := make(chan []byte)
-
-    go func() {
-        b := make([]byte, 1024)
-
-        for {
-            n, err := conn.Read(b)
-            if n > 0 {
-                res := make([]byte, n)
-                copy(res, b[:n])
-                c <- res
-            }
-            if err != nil {
-                c <- nil
-                break
-            }
-        }
-    }()
-
-    return c
-}
-#+END_SRC
-
 #+BEGIN_SRC go :tangle core/proxy.go :noweb yes :main no :comments yes :exports none
 package core
 
 import (
 	"net"
+        "errors"
 )
 
 <<src-proxy-core-fn-chanfromconn>>
@@ -298,99 +337,175 @@ import (
 
 #+END_SRC
 
-#+NAME: src|main.go
-#+BEGIN_SRC go :noweb true :exports none
-package main
+** Core unit tests
 
-import (
-	"errors"
-	"flag"
-	"fmt"
-	"log"
-	"os"
+*** ChanFromConn testcases
 
-	"github.com/lionkov/go9p/p"
-	"github.com/lionkov/go9p/p/srv"
-)
+   To Easy the testing, we'll create our own net.Conn implementation
+   that only writes and read in a internal buffer.
 
-type DchanFile struct {
-	srv.File
-	id int
+   The /MyConn/ have a /mutex/ to synchronize reads and writes into
+   /buffer/ and a /counter/ integer property to trigger a connection
+   error when 5 (five) or more reads occurs. The newMockCon returns a
+   new fresh connection.
+
+#+NAME: src-proxy-core-tests-myconn-new
+#+BEGIN_SRC go
+type MyConn struct {
+	buffer []byte
+        *sync.Mutex
+
+        counter int
 }
 
-type Dchan struct {
-	srv.File
+func newMockConn() net.Conn {
+	c := &MyConn{}
+	c.buffer = make([]byte, 0, 1024)
+	c.Mutex = &sync.Mutex{}
+        return c
 }
+#+END_SRC
 
-var addr = flag.String("addr", ":6666", "network address")
-var debug = flag.Bool("d", false, "print debug messages")
+    Write and Read simply operate on internal byte array
+    /buffer/. Both functions lock to avoid races.
 
-var root *srv.File
+#+NAME: src-proxy-core-tests-myconn-impl
+#+BEGIN_SRC go
+func (c *MyConn) Write(d []byte) (int, error) {
+	c.Lock()
+	defer c.Unlock()
 
-func (file *DchanFile) Read(fid *srv.FFid, buf []byte, offset uint64) (int, error) {
-	b := []byte("hacked by i4k")
-	n := len(b)
-
-	if offset >= uint64(n) {
-		return 0, nil
+	for _, b := range d {
+		c.buffer = append(c.buffer, b)
 	}
 
-	b = b[int(offset):n]
-	n -= int(offset)
-	if len(buf) < n {
-		n = len(buf)
+	return len(d), nil
+}
+
+func (c *MyConn) Read(d []byte) (int, error) {
+	var i int
+
+        if c.counter >= 5 {
+		return 0, errors.New("Connection error")
 	}
 
-	copy(buf[offset:int(offset)+n], b[offset:])
-	return n, nil
+read:
+	c.Lock()
+
+        if len(c.buffer) == 0 {
+		c.Unlock()
+		time.Sleep(100 * time.Nanosecond)
+		goto read
+	}
+
+	for i = 0; i < cap(d) && i < len(c.buffer); i++ {
+		d[i] = c.buffer[i]
+	}
+
+        c.buffer = c.buffer[i:]
+
+	c.Unlock()
+
+        c.counter += 1
+
+	return i, nil
 }
 
-func (file *DchanFile) Write(fid *srv.FFid, data []byte, offset uint64) (int, error) {
-	return 0, errors.New("permission denied")
-}
-
-func (file *DchanFile) Wstat(fid *srv.FFid, dir *p.Dir) error {
+func (c *MyConn) Close() error {
+	c.buffer = nil
 	return nil
 }
 
-func (file *DchanFile) Remove(fid *srv.FFid) error {
-	return nil
+func (c *MyConn) LocalAddr() net.Addr { return nil }
+func (c *MyConn) RemoteAddr() net.Addr { return nil }
+func (c *MyConn) SetDeadline(t time.Time) error { return nil }
+func (c *MyConn) SetReadDeadline(t time.Time) error { return nil }
+func (c *MyConn) SetWriteDeadline(t time.Time) error { return nil }
+#+END_SRC
+
+   ChanFromConn must be tested for the following cases:
+
+   1. Every data written into the connection must be written into the
+     channel;
+   2. If the Read from the connection fails, the channel must be
+     closed;
+
+
+   For the first case, we can test writing something into the
+   connection and verifying if it was written into the channel.
+
+#+NAME: src-proxy-core-tests-1
+#+BEGIN_SRC go
+func TestChanFromConn1(t *testing.T) {
+	conn := newMockConn()
+	chan1 := chanFromConn(conn)
+
+	conn.Write([]byte("teste"))
+
+        timeout := time.After(1 * time.Second)
+
+	select {
+	case d := <-chan1:
+		if string(d) != "teste" {
+			t.Errorf("Expected '%s' != from '%s'.",
+				"teste", string(d))
+		}
+	case <-timeout:
+		t.Error("No data available in 1 second")
+	}
+
+        conn.Write([]byte("i4k"))
+
+        timeout = time.After(1 * time.Second)
+
+        select {
+	case d := <-chan1:
+		if string(d) != "i4k" {
+			t.Errorf("Expected '%s' != from '%s'.",
+				"i4k", string(d))
+		}
+	case <-timeout:
+		t.Error("No data available in 1 second")
+	}
 }
+#+END_SRC
 
-func main() {
-	var err error
-	var ctl *DchanFile
-	var s *srv.Fsrv
+    For the second case, we'll write 5 times into the connection to
+    trigger an error in the Read method of /MyConn/.
 
-	flag.Parse()
-	user := p.OsUsers.Uid2User(os.Geteuid())
-	root = new(srv.File)
-	err = root.Add(nil, "/", user, nil, p.DMDIR|0777, nil)
-	if err != nil {
-		goto error
+#+NAME: src-proxy-core-tests-2
+#+BEGIN_SRC go
+func TestChanfromconn2(t *testing.T) {
+	conn := newMockConn()
+	chan1 := chanFromConn(conn)
+
+	conn.Write([]byte("you"))
+	<-chan1
+	conn.Write([]byte("have"))
+	<-chan1
+	conn.Write([]byte("been"))
+	<-chan1
+	conn.Write([]byte("hacked"))
+	<-chan1
+	conn.Write([]byte("!!!"))
+        <-chan1
+
+        // The next read will trigger a connection error
+	v, ok := <-chan1
+
+	if ok != false {
+		t.Errorf("Should fail... Returned %v", string(v))
 	}
-
-	ctl = new(DchanFile)
-	err = ctl.Add(root, "ctl", p.OsUsers.Uid2User(os.Geteuid()), nil, 0444, ctl)
-	if err != nil {
-		goto error
-	}
-
-	s = srv.NewFileSrv(root)
-	s.Dotu = true
-
-	if *debug {
-		s.Debuglevel = 1
-	}
-
-	s.Start(s)
-	err = s.StartNetListener("unix", *addr)
-	if err != nil {
-		goto error
-	}
-	return
-
-error:
-	log.Println(fmt.Sprintf("Error: %s", err))
 }
+#+END_SRC
+
+#+NAME: src-proxy-core-tests-chanfromconn
+#+HEADER: :imports '("net" "testing" "time" "sync" "errors")
+#+BEGIN_SRC go :noweb yes :tangle core/chanfromconn_test.go :comments yes :package core :main no
+
+<<src-proxy-core-tests-myconn-new>>
+<<src-proxy-core-tests-myconn-impl>>
+
+<<src-proxy-core-tests-1>>
+<<src-proxy-core-tests-2>>
 #+END_SRC
