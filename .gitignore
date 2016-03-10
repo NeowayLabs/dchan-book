@@ -7,8 +7,10 @@ unix/dchan/dchan
 *.pdf
 *.tex
 *.toc
+*.html
+*.txt
 /unix/dchan/Makefile
-/unix/dchan/*.go
 /unix/proxy/Makefile
+/unix/proxy/proxy
 *.go
 *.sh
