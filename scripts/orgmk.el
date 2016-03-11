@@ -57,9 +57,11 @@
       (let ((pkg 'htmlize))
         (package-install pkg)
         ))
-    (unless (locate-library "ob-go")
-      (let ((pkg 'ob-go))
+    (unless (locate-library "go-mode")
+      (let ((pkg 'go-mode))
         (package-install pkg)))))
+
+(load (concat  (file-name-directory load-file-name) "ob-go.el"))
 
 ;; version info
 (let ((org-install-dir (file-name-directory (locate-library "org-loaddefs")))
@@ -123,6 +125,8 @@
 
 (org-babel-do-load-languages            ; loads org, gnus-sum, etc...
  'org-babel-load-languages org-babel-load-languages)
+
+(setq org-ditaa-jar-path "/usr/bin/ditaa.jar")
 
 ;; accented characters on graphics
 (setq org-babel-R-command

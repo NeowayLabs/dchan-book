@@ -8,12 +8,12 @@
   communications (IPC) over a file tree interface.  These channels are
   much like Go channels and can be used in the same way but between
   processes.  Instead of implementing a new protocol for data exchange
-  like AMQP, Dchan uses a simple file interface.  There's no need of
-  client libraries for each language (every language knows how to read
-  and write from files).
+  or use a old one like AMQP, Dchan uses a simple file interface.
+  There's no need of client libraries for each language (every
+  language knows how to read and write from files).
 
   Dchan is able to share those files in the network with the help of
-  the 9P protocol.
+  the 9P protocol, but it is transparent for clients.
 
   This project uses the concept of [[https://en.wikipedia.org/wiki/Literate_programming][Literate Programming]] of Donald
   Knuth.
