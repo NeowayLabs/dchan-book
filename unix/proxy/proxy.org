@@ -12,7 +12,7 @@ build: tangle
 	go build -v
 
 test: tangle build
-	go test -v -race ./...
+	bash ../testing/testcover.sh
 	chmod +x tests/acceptance/*.sh
 	./tests/acceptance/vfs.sh
 
@@ -134,7 +134,14 @@ func chanFromConn(conn net.Conn) <-chan []byte {
 			}
 
 			if err != nil {
-				close(c)
+				if err == io.EOF {
+					// connection was closed
+					close(c)
+				} else {
+					c <- nil
+					close(c)
+				}
+
 				break
 			}
 		}
@@ -152,28 +159,40 @@ func chanFromConn(conn net.Conn) <-chan []byte {
     and /rConn/, and transfers data from one to the other (see
     [[Non-deterministic choice][Non-deterministic choice]]).
 
-    If a nil is received on /lChan/, this means that client
-    disconnects.
-    If a nil is received on /rChan/, this means that remote backend
-    closed the connection or a network error occurred.
+    Pipe uses the following convention to simplify the implementation:
+
+    If a nil is received on /lChan/ and channel is closed, then this
+    means that client disconnects.  If a nil is received on /lChan/
+    but channel is still active, then some error happened in the
+    connection.
+
+    The same for the remote one: If a nil is received on /rChan/ and
+    channel is closed, then this means that remote backend closed the
+    connection. If a nil is received but the channel is still active,
+    then some network error occurred.
 
 #+NAME: src-proxy-core-fn-pipe
 #+BEGIN_SRC go
-func Pipe(lConn net.Conn, rConn net.Conn) error {
+func Pipe(lConn net.Conn, rConn net.Conn) (error, error)  {
 	lChan := chanFromConn(lConn)
 	rChan := chanFromConn(rConn)
 
 	for {
 		select {
-		case b1 := <-lChan:
-			if b1 == nil {
-				return nil
+		case b1, ok1 := <-lChan:
+			if b1 == nil && ok1 == true {
+				return errors.New("Local connection error"), nil
+			} else if b1 == nil && ok1 == false {
+				// connection succesfully closed
+				return nil, nil
 			} else {
 				rConn.Write(b1)
 			}
-		case b2 := <-rChan:
-			if b2 == nil {
-				return errors.New("connection error")
+		case b2, ok2 := <-rChan:
+			if b2 == nil && ok2 == true {
+				return nil, errors.New("connection error")
+			} else if b2 == nil && ok2 == false {
+				return nil, nil
 			} else {
 				lConn.Write(b2)
 			}
@@ -324,14 +343,9 @@ func handleProxy(conn net.Conn, raddr string) {
 }
 #+END_SRC
 
+#+HEADER: :imports '("net" "errors" "io")
+#+HEADER: :package core
 #+BEGIN_SRC go :tangle core/proxy.go :noweb yes :main no :comments yes :exports none
-package core
-
-import (
-	"net"
-        "errors"
-)
-
 <<src-proxy-core-fn-chanfromconn>>
 <<src-proxy-core-fn-pipe>>
 <<src-proxy-core-fn-handleProxy>>
@@ -340,6 +354,8 @@ import (
 #+END_SRC
 
 ** Core unit tests
+
+   Proxy test coverage can be seen [[http://neowaylabs.github.io/dchan/proxy_cover.html][here]].
 
 *** ChanFromConn testcases
 
@@ -358,6 +374,7 @@ type MyConn struct {
         *sync.Mutex
 
         counter int
+        closed bool
 }
 
 func newMockConn() net.Conn {
@@ -377,6 +394,10 @@ func (c *MyConn) Write(d []byte) (int, error) {
 	c.Lock()
 	defer c.Unlock()
 
+	if c.closed {
+		return 0, errors.New("Connection closed")
+	}
+
 	for _, b := range d {
 		c.buffer = append(c.buffer, b)
 	}
@@ -387,8 +408,12 @@ func (c *MyConn) Write(d []byte) (int, error) {
 func (c *MyConn) Read(d []byte) (int, error) {
 	var i int
 
-read:
+readAgain:
 	c.Lock()
+
+        if c.closed {
+		return 0, io.EOF
+	}
 
         if c.counter >= 5 {
 		c.Unlock()
@@ -398,7 +423,7 @@ read:
         if len(c.buffer) == 0 {
 		c.Unlock()
 		time.Sleep(100 * time.Millisecond)
-		goto read
+		goto readAgain
 	}
 
 	for i = 0; i < cap(d) && i < len(c.buffer); i++ {
@@ -414,7 +439,11 @@ read:
 }
 
 func (c *MyConn) Close() error {
+	c.Lock()
+	defer c.Unlock()
+
 	c.buffer = nil
+        c.closed = true
 	return nil
 }
 
@@ -495,14 +524,14 @@ func TestChanfromconn2(t *testing.T) {
         // The next read will trigger a connection error
 	v, ok := <-chan1
 
-	if ok != false {
-		t.Errorf("Should fail... Returned %v", string(v))
+	if v == nil && ok == false {
+		t.Errorf("The channel must be open... Returned %v :: %v", string(v), ok)
 	}
 }
 #+END_SRC
 
 #+NAME: src-proxy-core-tests-chanfromconn
-#+HEADER: :imports '("net" "testing" "time" "sync" "errors")
+#+HEADER: :imports '("net" "io" "testing" "time" "sync" "errors")
 #+BEGIN_SRC go :noweb yes :tangle core/chanfromconn_test.go :comments yes :package core :main no :exports none
 
 <<src-proxy-core-tests-myconn-new>>
@@ -517,8 +546,10 @@ func TestChanfromconn2(t *testing.T) {
     The Pipe function have the following test cases:
 
     1. Every byte written on one channel must be written on the other;
-    2. If reading /lChan/ returns nil, then Pipe must return successfully;
-    3. If reading /rChan/ returns nil, then Pipe must return an error;
+    2. If reading some of the channels receive nil, but the channel is
+       closed, then Pipe must return successfully;
+    3. If reading some of the channels receive nil but channel is
+       active, then must return an error;
 
 #+NAME: src-proxy-core-tests-pipe-1
 #+BEGIN_SRC go
@@ -527,10 +558,14 @@ func TestPipe1(t *testing.T) {
 	rConn := newMockConn()
 
         go func() {
-		err := Pipe(lConn, rConn)
+		err1, err2 := Pipe(lConn, rConn)
 
-		if err != nil {
-			t.Error(err)
+		if err1 != nil {
+			t.Errorf("Conn1 failed: %s", err1.Error())
+		}
+
+                if err2 != nil {
+			t.Errorf("Conn2 failed: %s", err2.Error())
 		}
 	}()
 
@@ -557,11 +592,146 @@ func TestPipe1(t *testing.T) {
 }
 #+END_SRC
 
+    Closing the local connection must make Pipe return successfully
+    (second case).
 
+#+NAME: src-proxy-core-tests-pipe2lconn
+#+BEGIN_SRC go
+func TestPipe2LConn(t *testing.T) {
+	lConn := newMockConn()
+	rConn := newMockConn()
+
+	done := make(chan bool)
+
+	go func() {
+		err1, err2 := Pipe(lConn, rConn)
+
+		if err1 != nil {
+			t.Error("conn1 failed: %s", err1.Error())
+		}
+
+		if err2 != nil {
+			t.Error("conn2 failed: %s", err2.Error())
+		}
+
+		done <- true
+	}()
+
+	lConn.Close()
+
+	<-done
+}
+#+END_SRC
+
+    Closing the remote connection must make Pipe return successfully
+    (second case).
+
+#+NAME: src-proxy-core-tests-pipe2rconn
+#+BEGIN_SRC go
+func TestPipe2RConn(t *testing.T) {
+	lConn := newMockConn()
+	rConn := newMockConn()
+
+	done := make(chan bool)
+
+	go func() {
+		err1, err2 := Pipe(lConn, rConn)
+
+		if err1 != nil {
+			t.Error("conn1 failed: %s", err1.Error())
+		}
+
+		if err2 != nil {
+			t.Error("conn2 failed: %s", err2.Error())
+		}
+
+		done <- true
+	}()
+
+	rConn.Close()
+
+	<-done
+}
+#+END_SRC
+
+    If some network error happens on the local socket, then Pipe
+    should fail and return the error on /lErr/ and /rErr/ should be /nil/.
+
+#+NAME: src-proxy-core-tests-pipe3lconn
+#+BEGIN_SRC go
+func TestPipe3LConn(t *testing.T) {
+	lConn := newMockConn()
+	rConn := newMockConn()
+
+	done := make(chan bool)
+
+	go func() {
+		lErr, rErr := Pipe(lConn, rConn)
+
+		if lErr == nil {
+			t.Error("conn1 should fail...")
+		}
+
+		if rErr != nil {
+			t.Error("conn2 failed: %s", rErr.Error())
+		}
+
+		done <- true
+	}()
+
+        lConn.Write([]byte("this"))
+        lConn.Write([]byte("will"))
+        lConn.Write([]byte("trigger"))
+        lConn.Write([]byte("an"))
+        lConn.Write([]byte("error"))
+
+	<-done
+}
+#+END_SRC
+
+    If some network error happens on the local socket, then Pipe
+    should fail and return the error on /lErr/ and /rErr/ should be /nil/.
+
+#+NAME: src-proxy-core-tests-pipe3rconn
+#+BEGIN_SRC go
+func TestPipe3RConn(t *testing.T) {
+	lConn := newMockConn()
+	rConn := newMockConn()
+
+	done := make(chan bool)
+
+	go func() {
+		lErr, rErr := Pipe(lConn, rConn)
+
+		if lErr != nil {
+			t.Error("lErr failed: %s", lErr.Error())
+		}
+
+		if rErr == nil {
+			t.Error("conn1 should fail...")
+		}
+
+		done <- true
+	}()
+
+        rConn.Write([]byte("this"))
+        rConn.Write([]byte("will"))
+        rConn.Write([]byte("trigger"))
+        rConn.Write([]byte("an"))
+        rConn.Write([]byte("error"))
+
+	<-done
+}
+#+END_SRC
 
 #+NAME: src-proxy-core-tests-pipe
 #+HEADER: :main no :package core
 #+HEADER: :imports '("testing")
 #+BEGIN_SRC go :noweb yes :tangle core/pipe_test.go
 <<src-proxy-core-tests-pipe-1>>
+
+<<src-proxy-core-tests-pipe2lconn>>
+<<src-proxy-core-tests-pipe2rconn>>
+<<src-proxy-core-tests-pipe3lconn>>
+<<src-proxy-core-tests-pipe3rconn>>
 #+END_SRC
