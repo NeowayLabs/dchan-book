@@ -27,6 +27,7 @@ before_install:
   - cd /tmp/plan9 && ./INSTALL
   - sudo addgroup travis fuse
   - sudo chmod 755 /etc/fuse.conf
+  - go get -v github.com/wadey/gocovmerge
 notifications:
   email:
     - tiago.natel@neoway.com.br
