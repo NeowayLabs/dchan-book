@@ -48,7 +48,7 @@ The most used commands are:
 # This document is released to the public domain, though with no
 # warranties; use at your own risk
 
-.PHONY: build clean clean-source clean-latex
+.PHONY: build clean clean-source clean-latex test test-proxy test-dchan
 
 
 # To install `dchan', type `make' and then `make install'.
@@ -92,20 +92,23 @@ clean: tangle clean-latex clean-source
 
 tangle:
 	org-tangle $(DOC_BOOK)
-
-tangle-src:
+	org-tangle $(TEST_SRC)
 	org-tangle $(DCHAN_SRC)
 	org-tangle $(PROXY_SRC)
-	org-tangle $(TEST_SRC)
 
-build: tangle-src
+build: tangle
 	cd unix/dchan/ && make build
 	cd unix/proxy/ && make build
 
 doc: $(HTMLS) $(PDFS) $(TXTS)
 
-test: tangle-src
+test-dchan: tangle
+	cd unix/dchan/ && make test
+
+test-proxy: tangle
 	cd unix/proxy/ && make test
+
+test: tangle test-dchan test-proxy
 
 install:
 	cp $(OBJS) $(BIN_DIR)

@@ -1,16 +1,18 @@
-# [[file:dchan.orgmk::*Makefile][Makefile:1]]
+
+# [[file:~/projects/go-workspace/src/github.com/NeowayLabs/dchan/dchan.orgmk::*Makefile][Makefile:1]]
+
 # A generic orgmode Makefile, by Todd Lewis <tlewis@brickabode.com>
 # 23 February 2016
 # This document is released to the public domain, though with no
 # warranties; use at your own risk
 
-.PHONY: build clean clean-source clean-latex
+.PHONY: build clean clean-source clean-latex test test-proxy test-dchan
 
 
 # To install `dchan', type `make' and then `make install'.
 BIN_DIR=/usr/local/bin
 DCHAN_SRC=$(wildcard unix/dchan/*.org)
-PROXY_SRC=$(wildcard unix/proxy/*.org)
+PROXY_SRC=unix/proxy/proxy.org
 TEST_SRC=$(wildcard unix/testing/*.org)
 OBJS=	unix/dchan/dchan \
 	unix/proxy/proxy
@@ -48,20 +50,23 @@ clean: tangle clean-latex clean-source
 
 tangle:
 	org-tangle $(DOC_BOOK)
-
-tangle-src:
+	org-tangle $(TEST_SRC)
 	org-tangle $(DCHAN_SRC)
 	org-tangle $(PROXY_SRC)
-	org-tangle $(TEST_SRC)
 
-build: tangle-src
+build: tangle
 	cd unix/dchan/ && make build
 	cd unix/proxy/ && make build
 
 doc: $(HTMLS) $(PDFS) $(TXTS)
 
-test: tangle-src
+test-dchan: tangle
+	cd unix/dchan/ && make test
+
+test-proxy: tangle
 	cd unix/proxy/ && make test
+
+test: tangle test-dchan test-proxy
 
 install:
 	cp $(OBJS) $(BIN_DIR)
@@ -76,4 +81,5 @@ install:
 
 %.version: %.org
 	(ver=`date +%s`; cat $< | sed 's/\$$Version:[^$$]*\$$/$$Version: '$$ver' $$/g' > .version-$$ver && mv .version-$$ver $< && echo Versioned $<)
+
 # Makefile:1 ends here

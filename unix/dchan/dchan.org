@@ -32,9 +32,9 @@ Read the [[https://golang.org/doc/install][Go Getting started]] tutorial.
 
 * Implementation
 
-** dchan-proxy
+** Dchan
 
-** Source Makefile
+*** Source Makefile
 
 #+BEGIN_SRC makefile :tangle Makefile
 all: clean tangle build test
@@ -56,16 +56,224 @@ clean:
 
 #+END_SRC
 
-** Main module
+*** Introduction
 
-Main is the module responsible to parse the command-line arguments and
-initialize the 9P file server.
+    Dchan is a 9P file server developed with go9p library. This
+    library resembles the old plan9's lib9p, but with some
+    simplifications in the API. Behind the good design of lib9p and
+    go9p is where dchan really shines. They provide a server
+    abstraction that simplify dchan implementation. The file server
+    author doesn't need to worry about the 9P protocol internals
+    working, focusing on the 9P file messages only. Then Dchan logic
+    is most related to CSP than 9P semantics.
 
-#+BEGIN_SRC go :tangle main.go :imports "fmt" :main yes
-fmt.Printf("Dchan server")
+    For more information about Dchan design see the [[Architecture][Architecture
+    section]].
+
+*** Acceptance testings
+
+    Dchan is a 9P file server, then the most basic acceptance tests
+    are related to the exposed file tree interface. It must be
+    consistent and behave as a local disk file system. Traditional
+    unix tools as /cat/, /grep/, /sed/, /tee/, etc, must work without
+    problems.
+
+    Dchan acceptance tests uses the [[Testing Infraestructure][Testing Infrastructure]] created
+    before.
+
+**** Ensures dchan is mountable on UNIX
+
+     This tests only ensures dchan is a mountable fs and clients can
+     change the current directory to the mounted one (cd /tmp/dchan).
+
+#+NAME: src-dchan-tests-acceptance-vfs
+#+BEGIN_SRC sh :tangle tests/acceptance/vfs.sh :shebang #!/bin/bash
+set -e
+
+. ../testing/helpers.sh
+
+DAEMONPID=""
+
+function startDchan {
+    local cwd="$(pwd)"
+
+    ./dchan -addr ":6666" -d &
+
+    BACKENDPID=$!
+
+    cd "${cwd}"
+}
+
+function changedir {
+    local targetdir="$1"
+
+    cd "${targetdir}" || echo "ACCEPTANCE TEST ERROR: Unable to cd into mount point"
+}
+
+# Running backend 9P file server
+
+MNTPOINT="/tmp/dchan"
+
+setup "$MNTPOINT" "tcp!localhost!6666" "$(pwd)/dchan -addr 'localhost:6666'"
+
+changedir "$MNTPOINT"
+
+teardown "$MNTPOINT" "${DAEMONPID}"
 #+END_SRC
 
-#+RESULTS:
+*** Dchan
+
+    Dchan extends the go9p file server (/srv.File/) data structure,
+    overriding the required methods for opening, reading, writing,
+    etc, files. The core data structure is /File/ and it can be
+    seen below:
+
+#+NAME: src-dchan-file-dat
+#+BEGIN_SRC go
+type File struct {
+	srv.File
+        aux Faux
+}
+#+END_SRC
+
+    /Faux/ stores auxiliary data for each file.
+
+#+NAME: src-dchan-faux-dat
+#+BEGIN_SRC go
+type Faux struct {
+	ftype uint8
+}
+#+END_SRC
+
+    /File/ have methods to handle each file operation. For now, the
+    /Read/ method only have a fixed size string.
+
+#+NAME: src-dchan-file-dat-read
+#+BEGIN_SRC go
+func (file *File) Read(fid *srv.FFid, buf []byte, offset uint64) (int, error) {
+	b := []byte("hacked by i4k")
+	n := len(b)
+
+	if offset >= uint64(n) {
+		return 0, nil
+	}
+
+	b = b[int(offset):n]
+	n -= int(offset)
+	if len(buf) < n {
+		n = len(buf)
+	}
+
+	copy(buf[offset:int(offset)+n], b[offset:])
+	return n, nil
+}
+#+END_SRC
+
+    /Write/, /Stat/ and /Wstat/ aren't implemented yet:
+
+#+NAME: src-dchan-file-dat-meth
+#+BEGIN_SRC go
+func (file *File) Write(fid *srv.FFid, data []byte, offset uint64) (int, error) {
+	return 0, errors.New("permission denied")
+}
+
+func (file *File) Wstat(fid *srv.FFid, dir *p.Dir) error {
+	return nil
+}
+
+func (file *File) Remove(fid *srv.FFid) error {
+	return nil
+}
+#+END_SRC
+
+#+NAME: src-dchan-file.go
+#+HEADER: :imports '("errors" "github.com/lionkov/go9p/p" "github.com/lionkov/go9p/p/srv")
+#+BEGIN_SRC go :noweb yes :tangle fs.go :main no :package main
+<<src-dchan-file-dat>>
+<<src-dchan-faux-dat>>
+
+<<src-dchan-file-dat-read>>
+<<src-dchan-file-dat-meth>>
+#+END_SRC
+
+    Main is the module responsible to parse the command-line arguments and
+    initialize the 9P file server.
+
+    Dchan arguments are listed below:
+
++----------+---------------+------------------------+
+| argument | default value |      description       |
++----------+---------------+------------------------+
+|  addr    |    :6666      | network listen address |
++----------+---------------+------------------------+
+|  debug   |    not set    |    Enable debugging    |
++----------+---------------+------------------------+
+
+    Command-line arguments are defined below:
+
+#+NAME: src-dchan-cmdargs
+#+BEGIN_SRC go
+var addr = flag.String("addr", ":6666", "network address")
+var debug = flag.Bool("d", false, "print debug messages")
+#+END_SRC
+
+    The function main initialize a file server (/srv.Fsrv/ and add the
+    /ctl/ file to root of the filesystem (/). The root have permission
+    bits 0777 until we have a good understanding of the way services
+    will communicate. The Dotu attribute of file server indicates that
+    server is (or not) compatible with 9P2000.u specification. The
+    9P2000.u have some extensions for unix, and it is recommended for
+    unix file servers (our case).
+
+#+NAME: src-dchan-main
+#+BEGIN_SRC go
+var root *srv.File
+
+func main() {
+	var err error
+	var ctl *File
+	var s *srv.Fsrv
+
+	flag.Parse()
+	user := p.OsUsers.Uid2User(os.Geteuid())
+	root = new(srv.File)
+	err = root.Add(nil, "/", user, nil, p.DMDIR|0777, nil)
+	if err != nil {
+		goto error
+	}
+
+	ctl = new(File)
+	err = ctl.Add(root, "ctl", p.OsUsers.Uid2User(os.Geteuid()), nil, 0444, ctl)
+	if err != nil {
+		goto error
+	}
+
+	s = srv.NewFileSrv(root)
+	s.Dotu = true
+
+	if *debug {
+		s.Debuglevel = 1
+	}
+
+	s.Start(s)
+	err = s.StartNetListener("tcp", *addr)
+	if err != nil {
+		goto error
+	}
+	return
+
+error:
+	log.Println(fmt.Sprintf("Error: %s", err))
+}
+#+END_SRC
+
+#+NAME: src-main.go
+#+HEADER: :imports '("flag" "fmt" "log" "os" "github.com/lionkov/go9p/p" "github.com/lionkov/go9p/p/srv")
+#+BEGIN_SRC go :tangle main.go :noweb yes :main no :package main :exports none
+<<src-dchan-cmdargs>>
+<<src-dchan-main>>
+#+END_SRC
+
 
 * Test cases
 
