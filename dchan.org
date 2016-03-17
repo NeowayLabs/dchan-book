@@ -54,7 +54,7 @@ The most used commands are:
 # To install `dchan', type `make' and then `make install'.
 BIN_DIR=/usr/local/bin
 DCHAN_SRC=$(wildcard unix/dchan/*.org)
-PROXY_SRC=$(wildcard unix/proxy/*.org)
+PROXY_SRC=unix/proxy/proxy.org
 TEST_SRC=$(wildcard unix/testing/*.org)
 OBJS=	unix/dchan/dchan \
 	unix/proxy/proxy
