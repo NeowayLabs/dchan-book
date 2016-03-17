@@ -1,0 +1,41 @@
+* Proxy design
+
+  The design choices and trade offs for the proxy solution are
+  described in this section.
+
+  There's X type of proxies that we can have:
+
+  1. Pure TCP proxy;
+  2. 9P proxy;
+  3. Full 9P server with proxy capabilities;
+  4. Add proxy to dchan, the same as 3, but in the same project;
+
+** Pure TCP proxy
+
+   The first design choice, the idea of a pure TCP proxy, was proved
+   as wrong. It was guessed as the most easy and correct way to
+   proxy. But as discovered in the testing phase, it doesn't fulfill
+   the requirements because of stateful nature of 9P protocol.
+
+   Everything works as expected until a network partition happens. In
+   this case, a new connection with the 9P file server is required and
+   then this requires a new attach message from the client side. Even
+   if the proxy provides an automatic attach in this case, all of the
+   state stored in the client side is now invalid in the file
+   server. Every message will return an error.
+
+   It will not work!
+
+** 9P proxy
+
+   Maybe the most correct and fast way, but the most hard as well
+   because requires a deeper understanding of the 9P protocol to be
+   implemented correctly.
+
+** Full 9P server with proxy capabilities
+
+   Lots of repetitive code, because Dchan is a fully 9P server too.
+
+** Add proxy to dchan
+
+   I'm on this track!
