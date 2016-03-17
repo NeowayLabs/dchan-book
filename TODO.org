@@ -29,7 +29,7 @@
    :END:
 
 ** Dchan-proxy [0/2]                                                  :proxy:
-*** TODO Implement dchan-proxy PoC [6/7]
+*** TODO Implement dchan-proxy PoC [5/7]
     SCHEDULED: <2016-03-08 Tue> DEADLINE: <2016-03-18 Fri>
     :PROPERTIES:
     :ORDERED:  t
@@ -55,13 +55,16 @@
      :LOGBOOK:
      CLOCK: [2016-03-08 Tue 15:21]--[2016-03-08 Tue 16:33] =>  1:12
      :END:
-**** DONE Implement the proxy as a pure TCP-proxy
+**** WAITING Implement the proxy as a pure TCP-proxy
+     - State "WAITING" from "DONE" [2016-03-15 Tue 14:18] \\
+       The current proxy design have flaws discovered in the test
+       cases. It'll require more research.
      :LOGBOOK:
      CLOCK: [2016-03-09 Wed 10:10]--[2016-03-09 Wed 12:52] =>  2:42
      CLOCK: [2016-03-08 Tue 17:00]--[2016-03-08 Tue 19:16] =>  2:16
      CLOCK: [2016-03-08 Tue 16:36]--[2016-03-08 Tue 16:53] =>  0:17
      :END:
-**** NEXT Achieve good test coverage
+**** TODO Achieve good test coverage
      :LOGBOOK:
      CLOCK: [2016-03-11 Fri 15:25]--[2016-03-11 Fri 16:54] =>  1:29
      CLOCK: [2016-03-11 Fri 13:16]--[2016-03-11 Fri 14:50] =>  1:34
@@ -82,6 +85,15 @@
 
 ** Dchan-server [0/0]                                                :server:
 *** TODO Port Plan9 version to Go
+**** NEXT Add basic unit tests to ob-go
+     :LOGBOOK:
+     CLOCK: [2016-03-15 Tue 15:48]
+     :END:
+**** TODO Create the basic Go 9P file server.
+     :LOGBOOK:
+     CLOCK: [2016-03-15 Tue 15:00]--[2016-03-15 Tue 15:46]
+     :END:
+
 
 ** TODO Port part of our architecture to use dchan
 
@@ -93,23 +105,26 @@
 *** TODO LoC on client side (dchan vs amqp)
 
 #+BEGIN: clocktable :maxlevel 4 :scope file
-#+CAPTION: Clock summary at [2016-03-11 Fri 16:55]
-| Headline                                        | Time        |          |          |       |
-|-------------------------------------------------+-------------+----------+----------+-------|
-| *Total time*                                    | *25d 11:27* |          |          |       |
-|-------------------------------------------------+-------------+----------+----------+-------|
-| Dchan [6/8]                                     | 25d 11:27   |          |          |       |
-| \_  DONE Plan9 Research and Proof of Concept    |             | 23d 0:00 |          |       |
-| \_  DONE Add travis-ci integration              |             |    10:20 |          |       |
-| \_  DONE Make possible download the last...     |             |     3:13 |          |       |
-| \_  DONE Design of dchan-proxy                  |             |     9:16 |          |       |
-| \_  Dchan-proxy [0/2]                           |             | 1d 12:38 |          |       |
-| \_    TODO Implement dchan-proxy PoC [6/7]      |             |          | 1d 12:38 |       |
-| \_      DONE Create the basic 9P file server    |             |          |          |  7:03 |
-| \_      DONE Add testing infrastructure         |             |          |          |  4:55 |
-| \_      DONE Test usage of unix socket as...    |             |          |          |  1:29 |
-| \_      DONE Separate testing infrastructure... |             |          |          |  1:59 |
-| \_      DONE Study the Go API for 9P clients... |             |          |          |  1:12 |
-| \_      DONE Implement the proxy as a pure...   |             |          |          |  5:15 |
-| \_      NEXT Achieve good test coverage         |             |          |          | 14:45 |
+#+CAPTION: Clock summary at [2016-03-15 Tue 15:48]
+| Headline                                         | Time        |          |          |       |
+|--------------------------------------------------+-------------+----------+----------+-------|
+| *Total time*                                     | *25d 12:13* |          |          |       |
+|--------------------------------------------------+-------------+----------+----------+-------|
+| Dchan [6/8]                                      | 25d 12:13   |          |          |       |
+| \_  DONE Plan9 Research and Proof of Concept     |             | 23d 0:00 |          |       |
+| \_  DONE Add travis-ci integration               |             |    10:20 |          |       |
+| \_  DONE Make possible download the last...      |             |     3:13 |          |       |
+| \_  DONE Design of dchan-proxy                   |             |     9:16 |          |       |
+| \_  Dchan-proxy [0/2]                            |             | 1d 12:38 |          |       |
+| \_    TODO Implement dchan-proxy PoC [5/7]       |             |          | 1d 12:38 |       |
+| \_      DONE Create the basic 9P file server     |             |          |          |  7:03 |
+| \_      DONE Add testing infrastructure          |             |          |          |  4:55 |
+| \_      DONE Test usage of unix socket as...     |             |          |          |  1:29 |
+| \_      DONE Separate testing infrastructure...  |             |          |          |  1:59 |
+| \_      DONE Study the Go API for 9P clients...  |             |          |          |  1:12 |
+| \_      WAITING Implement the proxy as a pure... |             |          |          |  5:15 |
+| \_      TODO Achieve good test coverage          |             |          |          | 14:45 |
+| \_  Dchan-server [0/0]                           |             |     0:46 |          |       |
+| \_    TODO Port Plan9 version to Go              |             |          |     0:46 |       |
+| \_      TODO Create the basic Go 9P file server. |             |          |          |  0:46 |
 #+END:
