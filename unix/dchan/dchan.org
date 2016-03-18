@@ -42,7 +42,10 @@ all: clean tangle build test
 tangle:
 	org-tangle dchan.org
 
-build: tangle
+deps:
+	go get -v -t ./...
+
+build: tangle deps
 	go build -v
 
 test: tangle build
