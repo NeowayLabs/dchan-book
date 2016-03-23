@@ -10,7 +10,7 @@ env:
 install:
   - cd $HOME/gopath/src/github.com/NeowayLabs/dchan && make build
 script:
-  - make
+  - make test
   - bash ./scripts/deploy-docs.sh
 before_install:
   - sudo rm /etc/dpkg/dpkg.cfg.d/multiarch
