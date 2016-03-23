@@ -1,7 +1,7 @@
 
 # [[file:~/projects/go-workspace/src/github.com/NeowayLabs/dchan/dchan.orgmk::*Makefile][Makefile:1]]
 
-.PHONY: build clean clean-source clean-latex test test-proxy test-dchan
+.PHONY: build clean clean-source clean-latex tangle test test-proxy test-dchan
 
 
 # To install `dchan', type `make' and then `make install'.
@@ -16,7 +16,7 @@ HTMLS=$(patsubst %.org,%.html,$(DOC_BOOK))
 TXTS=$(patsubst %.org,%.txt,$(DOC_BOOK))
 PDFS=$(patsubst %.org,%.pdf,$(DOC_BOOK))
 
-all: clean $(OBJ) test $(HTMLS) $(TXTS) $(PDFS)
+all: tangle clean test $(HTMLS) $(TXTS) $(PDFS)
 
 clean-latex:
 	rm -f *.blg *.bbl *.tex *.odt *.toc *.out *.aux
@@ -25,7 +25,7 @@ clean-source:
 	-cd unix/dchan/ && make clean
 	-cd unix/proxy/ && make clean
 
-clean: tangle clean-latex clean-source
+clean: clean-latex clean-source
 	rm -f *.pngt
 	rm -f *.txt *.html *.pdf *.odt
 	rm -f *.log
@@ -44,9 +44,9 @@ clean: tangle clean-latex clean-source
 	pdflatex dchan.tex
 
 tangle:
-	org-tangle $(DOC_BOOK)
-	org-tangle $(TEST_SRC)
-	org-tangle $(DCHAN_SRC)
+	org-tangle $(DOC_BOOK) && \
+	org-tangle $(TEST_SRC) && \
+	org-tangle $(DCHAN_SRC) && \
 	org-tangle $(PROXY_SRC)
 
 build: tangle

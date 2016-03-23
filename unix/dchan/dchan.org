@@ -113,15 +113,41 @@ function changedir {
     cd "${targetdir}" || echo "ACCEPTANCE TEST ERROR: Unable to cd into mount point"
 }
 
+function readctl {
+    local mntp="$1"
+    local expected="hacked by i4k"
+    local cwd="$(pwd)"
+
+    cd "${mntp}"
+    local result="$(cat ctl)"
+
+    if [ "${expected}" != "${result}" ]; then
+        echo "Failed, received: ${result}"
+    fi
+
+}
+
 # Running backend 9P file server
 
 MNTPOINT="/tmp/dchan"
 
-setup "$MNTPOINT" "tcp!localhost!6666" "$(pwd)/dchan -addr 'localhost:6666'"
+setup "${MNTPOINT}" "tcp!localhost!6666" "$(pwd)/dchan -addr 'localhost:6666'"
 
-changedir "$MNTPOINT"
+RES="`changedir \"${MNTPOINT}\"`"
+if [ -n "$RES" ]; then
+    echo "Failed to change dir: $RES"
+    teardown "${MNTPOINT}" "${DAEMONPID}"
+    exit 1
+fi
 
-teardown "$MNTPOINT" "${DAEMONPID}"
+RES="`readctl \"${MNTPOINT}\"`"
+if [ -n "$RES" ]; then
+    echo "Failed read ctl: $RES"
+    teardown "${MNTPOINT}" "${DAEMONPID}"
+    exit 1
+fi
+
+teardown "${MNTPOINT}" "${DAEMONPID}"
 #+END_SRC
 
 *** Dchan
