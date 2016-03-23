@@ -13,4 +13,3 @@ unix/dchan/dchan
 /unix/proxy/Makefile
 /unix/proxy/proxy
 *.go
-*.sh

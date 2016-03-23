@@ -1,11 +1,6 @@
 
 # [[file:~/projects/go-workspace/src/github.com/NeowayLabs/dchan/dchan.orgmk::*Makefile][Makefile:1]]
 
-# A generic orgmode Makefile, by Todd Lewis <tlewis@brickabode.com>
-# 23 February 2016
-# This document is released to the public domain, though with no
-# warranties; use at your own risk
-
 .PHONY: build clean clean-source clean-latex test test-proxy test-dchan
 
 
@@ -70,16 +65,5 @@ test: tangle test-dchan test-proxy
 
 install:
 	cp $(OBJS) $(BIN_DIR)
-
-
-# To include an automatic version number in your file, use a header like this:
-#
-#+OPTIONS: VERSION:$Version: $
-#
-# Then you can use this rule to automatically update it;
-# to update file foo.org, just do "make foo.version".
-
-%.version: %.org
-	(ver=`date +%s`; cat $< | sed 's/\$$Version:[^$$]*\$$/$$Version: '$$ver' $$/g' > .version-$$ver && mv .version-$$ver $< && echo Versioned $<)
 
 # Makefile:1 ends here
