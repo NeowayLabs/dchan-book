@@ -16,7 +16,7 @@ HTMLS=$(patsubst %.org,%.html,$(DOC_BOOK))
 TXTS=$(patsubst %.org,%.txt,$(DOC_BOOK))
 PDFS=$(patsubst %.org,%.pdf,$(DOC_BOOK))
 
-all: tangle clean test $(HTMLS) $(TXTS) $(PDFS)
+all: tangle clean tangle test $(HTMLS) $(TXTS) $(PDFS)
 
 clean-latex:
 	rm -f *.blg *.bbl *.tex *.odt *.toc *.out *.aux

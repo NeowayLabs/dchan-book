@@ -19,7 +19,6 @@ test: tangle build
 clean:
 	rm -f tests/acceptance/*.sh
 	rm -f *.go
-	rm -f Makefile
 
 #+END_SRC
 
