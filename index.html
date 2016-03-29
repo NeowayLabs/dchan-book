@@ -1,0 +1,3305 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<title>dchan - distributed channel</title>
+<meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta  name="generator" content="Org-mode" />
+<meta  name="author" content="Tiago Natel de Moura" />
+<link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/bigblow/css/htmlize.css"/>
+<link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/bigblow/css/bigblow.css"/>
+<link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/bigblow/css/hideshow.css"/>
+<script type="text/javascript" src="http://www.pirilampo.org/styles/bigblow/js/jquery-1.11.0.min.js"></script>
+<script type="text/javascript" src="http://www.pirilampo.org/styles/bigblow/js/jquery-ui-1.10.2.min.js"></script>
+<script type="text/javascript" src="http://www.pirilampo.org/styles/bigblow/js/jquery.localscroll-min.js"></script>
+<script type="text/javascript" src="http://www.pirilampo.org/styles/bigblow/js/jquery.scrollTo-1.4.3.1-min.js"></script>
+<script type="text/javascript" src="http://www.pirilampo.org/styles/bigblow/js/jquery.zclip.min.js"></script>
+<script type="text/javascript" src="http://www.pirilampo.org/styles/bigblow/js/bigblow.js"></script>
+<script type="text/javascript" src="http://www.pirilampo.org/styles/bigblow/js/hideshow.js"></script>
+<script type="text/javascript" src="http://www.pirilampo.org/styles/lib/js/jquery.stickytableheaders.min.js"></script>
+<script type="text/javascript" src="http://orgmode.org/mathjax/MathJax.js"></script>
+<script type="text/javascript">
+<!--/*--><![CDATA[/*><!--*/
+    MathJax.Hub.Config({
+        // Only one of the two following lines, depending on user settings
+        // First allows browser-native MathML display, second forces HTML/CSS
+        //  config: ["MMLorHTML.js"], jax: ["input/TeX"],
+            jax: ["input/TeX", "output/HTML-CSS"],
+        extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js",
+                     "TeX/noUndefined.js"],
+        tex2jax: {
+            inlineMath: [ ["\\(","\\)"] ],
+            displayMath: [ ['$$','$$'], ["\\[","\\]"], ["\\begin{displaymath}","\\end{displaymath}"] ],
+            skipTags: ["script","noscript","style","textarea","pre","code"],
+            ignoreClass: "tex2jax_ignore",
+            processEscapes: false,
+            processEnvironments: true,
+            preview: "TeX"
+        },
+        showProcessingMessages: true,
+        displayAlign: "center",
+        displayIndent: "2em",
+
+        "HTML-CSS": {
+             scale: 100,
+             availableFonts: ["STIX","TeX"],
+             preferredFont: "TeX",
+             webFont: "TeX",
+             imageFont: "TeX",
+             showMathMenu: true,
+        },
+        MMLorHTML: {
+             prefer: {
+                 MSIE:    "MML",
+                 Firefox: "MML",
+                 Opera:   "HTML",
+                 other:   "HTML"
+             }
+        }
+    });
+/*]]>*///-->
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">dchan - distributed channel</h1>
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. dchan</a>
+<ul>
+<li><a href="#sec-1-1">1.1. Why dchan?</a></li>
+</ul>
+</li>
+<li><a href="#sec-2">2. Dependencies</a>
+<ul>
+<li><a href="#sec-2-1">2.1. Archlinux</a></li>
+<li><a href="#sec-2-2">2.2. Orgmk</a></li>
+<li><a href="#sec-2-3">2.3. Building</a></li>
+</ul>
+</li>
+<li><a href="#sec-3">3. Alternative technologies</a></li>
+<li><a href="#sec-4">4. Current situation</a></li>
+<li><a href="#sec-5">5. API</a>
+<ul>
+<li>
+<ul>
+<li><a href="#sec-5-0-1">5.0.1. Desired goals</a></li>
+<li><a href="#sec-5-0-2">5.0.2. CSP Communication Semantics</a></li>
+<li><a href="#sec-5-0-3">5.0.3. Atomic communication</a></li>
+<li><a href="#sec-5-0-4">5.0.4. Non-deterministic choice</a></li>
+<li><a href="#sec-5-0-5">5.0.5. Dchan CSP semantics</a></li>
+<li><a href="#sec-5-0-6">5.0.6. Client interface</a></li>
+<li><a href="#sec-5-0-7">5.0.7. Trade-offs</a></li>
+<li><a href="#sec-5-0-8">5.0.8. Messaging</a></li>
+<li><a href="#sec-5-0-9">5.0.9. Text messages</a></li>
+<li><a href="#sec-5-0-10">5.0.10. Ctl</a></li>
+<li><a href="#sec-5-0-11">5.0.11. Composability</a></li>
+<li><a href="#sec-5-0-12">5.0.12. Testing</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#sec-6">6. Terminology</a></li>
+<li><a href="#sec-7">7. Architecture</a></li>
+<li><a href="#sec-8">8. Makefile</a></li>
+<li><a href="#sec-9">9. Testing infrastructure</a>
+<ul>
+<li><a href="#sec-9-1">9.1. Setup and teardown</a></li>
+</ul>
+</li>
+<li><a href="#sec-10">10. Development</a>
+<ul>
+<li><a href="#sec-10-1">10.1. Dependencies</a></li>
+<li><a href="#sec-10-2">10.2. Implementation</a>
+<ul>
+<li><a href="#sec-10-2-1">10.2.1. Dchan</a></li>
+</ul>
+</li>
+<li><a href="#sec-10-3">10.3. Test cases</a>
+<ul>
+<li><a href="#sec-10-3-1">10.3.1. Network partitions</a></li>
+</ul>
+</li>
+<li><a href="#sec-10-4">10.4. dchan-proxy</a>
+<ul>
+<li><a href="#sec-10-4-1">10.4.1. Makefile</a></li>
+<li><a href="#sec-10-4-2">10.4.2. Proxy acceptance tests</a></li>
+<li><a href="#sec-10-4-3">10.4.3. Proxy implementation</a></li>
+<li><a href="#sec-10-4-4">10.4.4. Core unit tests</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#sec-11">11. Work in progress</a>
+<ul>
+<li><a href="#sec-11-1">11.1. Dchan <code>[6/8]</code>&#xa0;&#xa0;&#xa0;<span class="tag"><span class="dchan">dchan</span></span></a>
+<ul>
+<li><a href="#sec-11-1-1">11.1.1. <span class="done DONE">DONE</span> Plan9 Research and Proof of Concept</a></li>
+<li><a href="#sec-11-1-2">11.1.2. <span class="done DONE">DONE</span> Design of API</a></li>
+<li><a href="#sec-11-1-3">11.1.3. <span class="done DONE">DONE</span> Add travis-ci integration</a></li>
+<li><a href="#sec-11-1-4">11.1.4. <span class="done DONE">DONE</span> Make possible download the last version of book</a></li>
+<li><a href="#sec-11-1-5">11.1.5. <span class="done DONE">DONE</span> Publish HTML version of master branch</a></li>
+<li><a href="#sec-11-1-6">11.1.6. <span class="done DONE">DONE</span> Design of dchan-proxy</a></li>
+<li><a href="#sec-11-1-7">11.1.7. Dchan-proxy <code>[0/2]</code>&#xa0;&#xa0;&#xa0;<span class="tag"><span class="proxy">proxy</span></span></a></li>
+<li><a href="#sec-11-1-8">11.1.8. Dchan-server <code>[0/0]</code>&#xa0;&#xa0;&#xa0;<span class="tag"><span class="server">server</span></span></a></li>
+<li><a href="#sec-11-1-9">11.1.9. <span class="todo TODO">TODO</span> Port part of our architecture to use dchan</a></li>
+<li><a href="#sec-11-1-10">11.1.10. <span class="todo TODO">TODO</span> Add some instrumentation to compare against RabbitMQ</a></li>
+<li><a href="#sec-11-1-11">11.1.11. Generate comparison tables <code>[0/2]</code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#sec-12">12. Bibliography</a></li>
+</ul>
+</div>
+</div>
+<p>
+<a href="https://travis-ci.org/NeowayLabs/dchan"><a href="https://travis-ci.org/NeowayLabs/dchan.svg?branch=master">https://travis-ci.org/NeowayLabs/dchan.svg?branch=master</a></a>
+</p>
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> dchan</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+Dchan is a server that exposes channels for inter-process
+communications (IPC) over a file tree interface.  These channels are
+much like Go channels and can be used in the same way but between
+processes.  Instead of implementing a new protocol for data exchange
+or use a old one like AMQP, Dchan uses a simple file interface.
+There&rsquo;s no need of client libraries for each language (every
+language knows how to read and write from files).
+</p>
+
+<p>
+Dchan is able to share those files in the network with the help of
+the 9P protocol, but it is transparent for clients.
+</p>
+
+<p>
+This project uses the concept of <a href="https://en.wikipedia.org/wiki/Literate_programming">Literate Programming</a> of Donald
+Knuth.
+</p>
+
+<blockquote>
+<p>
+Let us change our traditional attitude to the construction of
+programs: Instead of imagining that our main task is to instruct a
+computer what to do, let us concentrate rather on explaining to human
+beings what we want a computer to do. \cite{Knuth:1984:LiterateProgramming}
+</p>
+</blockquote>
+
+<p>
+This book is the only source for design ideas, code, documentation,
+tests and project management. From it we build everything.
+</p>
+
+<p>
+You can download the book <a href="http://neowaylabs.github.io/dchan/dchan.pdf">here</a> or read the html version <a href="http://neowaylabs.github.io/dchan/index.html">here</a>.
+</p>
+</div>
+
+<div id="outline-container-sec-1-1" class="outline-3">
+<h3 id="sec-1-1"><span class="section-number-3">1.1</span> Why dchan?</h3>
+<div class="outline-text-3" id="text-1-1">
+<p>
+Dchan was created as an alternative technology for data processing
+pipelines. The classic approach to data processing is to write a
+program that reads in data, transforms it in some desired way, and
+outputs new data. Such programs, when chained, forms an
+architecture called &ldquo;data pipeline&rdquo;. An obvious example is UNIX
+pipes, that works very well when all programs share the same
+address space. For distributed architectures, a more elaborate
+solution must be used to perform message passing between different
+machines.
+</p>
+
+<p>
+After some time using RabbitMQ, and then studying other solutions,
+we discovered that majority of current technologies aren&rsquo;t good
+enough to solve our specific use cases.
+</p>
+
+<p>
+The problem is that, when the worker queue grow indefinitely,
+because of slow consumers throughput compared to publishers or
+because some consumers crashed, two things can happen:
+</p>
+
+<ul class="org-ul">
+<li>Memory starvation (in case of no persistence)
+</li>
+<li>Abruptly performance degradation
+</li>
+</ul>
+
+<p>
+In a high volume data processing, the difference of throughput
+between publishers and consumers can lead to lots of terabytes
+waiting to be processed if not properly handled.
+</p>
+
+<p>
+Dchan is an alternative to current brokered solutions but providing
+ad-hoc synchronization. Dchan helps micro-services to communicate
+transparently. It&rsquo;s much like a rendezvous point in your network,
+where different services met in order to exchange data directly (no
+need to store messages in-fly). Dchan uses the CSP (Communicating
+Sequential Processes) style of concurrency to create channels of
+data, enabling direct inter-process communication without requiring
+service discovery.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> Dependencies</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+To build dchan you&rsquo;ll need the following dependencies installed:
+</p>
+
+<ul class="org-ul">
+<li>Emacs &gt;= 24
+</li>
+<li><a href="https://github.com/fniessen/orgmk">orgmk</a>
+</li>
+<li><a href="https://golang.org">Go</a> &gt;= 1.4
+</li>
+<li><a href="https://www.gnu.org/software/make/">GNU Make</a>
+</li>
+</ul>
+
+<p>
+Tests dependencies (optional):
+</p>
+
+<ul class="org-ul">
+<li><a href="https://swtch.com/plan9port/">plan9port</a>
+</li>
+<li>Bash &gt;= 4
+</li>
+</ul>
+
+<p>
+Book dependencies (optional):
+</p>
+
+<ul class="org-ul">
+<li>Latex
+</li>
+<li>Ditaa
+</li>
+</ul>
+</div>
+
+<div id="outline-container-sec-2-1" class="outline-3">
+<h3 id="sec-2-1"><span class="section-number-3">2.1</span> Archlinux</h3>
+<div class="outline-text-3" id="text-2-1">
+<p>
+On archlinux the following command installs almost everything needed:
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-sh">sudo pacman -Syy emacs24 make go    <span class="org-string">\ </span><span class="org-comment-delimiter"># </span><span class="org-comment">software dependencies</span>
+                 plan9port bash     <span class="org-string">\ </span><span class="org-comment-delimiter"># </span><span class="org-comment">test dependencies</span>
+                 texlive-most ditaa   <span class="org-comment-delimiter"># </span><span class="org-comment">book dependencies</span>
+</pre>
+</div>
+
+<p>
+To install orgmk jump to <a href="#sec-2-2">Orgmk</a> section.
+</p>
+
+<p>
+After that, if you want execute dchan tests, you need configure
+your PATH and GOPATH environment variables.
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-sh"><span class="org-variable-name">PLAN9</span>=&lt;path-to-plan9port&gt; <span class="org-comment-delimiter"># </span><span class="org-comment">commonly /opt/plan9</span>
+<span class="org-builtin">export</span> <span class="org-variable-name">PATH</span>=$<span class="org-variable-name">PATH</span>:$<span class="org-variable-name">PLAN9</span> $<span class="org-variable-name">PLAN9</span>
+</pre>
+</div>
+
+<p>
+For GOPATH, read the Go <a href="https://golang.org/doc/install">Getting Started</a>.
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-2-2" class="outline-3">
+<h3 id="sec-2-2"><span class="section-number-3">2.2</span> Orgmk</h3>
+<div class="outline-text-3" id="text-2-2">
+<p>
+We don&rsquo;t use the default orgmk elisp, but a modified version
+configured for our project. To build orgmk, then use the commands
+below:
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-sh"><span class="org-builtin">cd</span> &lt;some-place&gt;
+git clone https://github.com/fniessen/orgmk.git
+<span class="org-builtin">cd</span> orgmk
+<span class="org-variable-name">ORGMK_EL</span>=&lt;path-to-dchan&gt;/scripts/orgmk.el make -e
+sudo make install
+</pre>
+</div>
+
+<p>
+The commands above will install orgmk on /usr/local/bin but using
+the emacs init elisp from dchan directory. If you use orgmk for
+other projects then you should install orgmk on another place.
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-2-3" class="outline-3">
+<h3 id="sec-2-3"><span class="section-number-3">2.3</span> Building</h3>
+<div class="outline-text-3" id="text-2-3">
+<p>
+Executing <i>make</i> will build the software, execute tests and build
+the book (pdf, html and txt). But you can run <i>make build</i> or <i>make
+test</i> independently.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> Alternative technologies</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+Below are some common used technologies for stream processing:
+</p>
+
+<ul class="org-ul">
+<li>Broker (message oriented middlewares)
+<ul class="org-ul">
+<li>AMQP
+<ul class="org-ul">
+<li>RabbitMQ
+</li>
+<li>Qpid
+</li>
+<li>ActiveMQ
+</li>
+</ul>
+</li>
+<li>NATS
+</li>
+<li>NSQ
+</li>
+<li>Kafka
+</li>
+<li>Redis
+</li>
+</ul>
+</li>
+<li>Brokerless (message passing libraries)
+<ul class="org-ul">
+<li>ZeroMQ
+</li>
+<li>Nanomsg
+</li>
+<li>Akka (actor concurrency model)
+</li>
+<li>Erlang OTP
+</li>
+</ul>
+</li>
+</ul>
+
+<p>
+The brokered solution could be splited into two classes:
+</p>
+
+<ul class="org-ul">
+<li>With database capabilities (persistence, guarantees)
+<ul class="org-ul">
+<li>RabbitMQ
+</li>
+<li>QPid
+</li>
+<li>ActiveMQ
+</li>
+<li>NSQ
+</li>
+<li>Kafka
+</li>
+<li>Redis
+</li>
+</ul>
+</li>
+<li>In-memory queues
+<ul class="org-ul">
+<li>NATS
+</li>
+</ul>
+</li>
+</ul>
+
+<p>
+Using the brokered solutions listed above means that will exists a
+message queue between every program that consumes data. This queue
+is called <i>worker queue</i> and can be in-memory or persistent
+depending on the solution.
+</p>
+
+<p>
+Some brokers with built-in database can be configured to work as
+in-memory queues too (RabbitMQ, Qpid, NSQ, Redis), but in this
+case, to avoid memory starvation, it should use some kind of
+watermark configuration, to activate persistence, or drop new
+messages, when the memory is over the threshold (See <a href="https://www.rabbitmq.com/memory.html">here</a>, <a href="http://nsq.io/deployment/production.html">here</a>,
+<a href="http://redis.io/topics/memory-optimization">here</a> and <a href="https://qpid.apache.org/releases/qpid-0.32/cpp-broker/book/chapter-Managing-CPP-Broker.html">here</a>).
+</p>
+
+<p>
+The entire application being down because of OOM in the broker
+isn&rsquo;t a good option for data processing, then NATS doesn&rsquo;t
+satisfies the basic requirement. NATS has a simple and good
+architecture but unusable for data processing because it turns the
+problem even worst, by automatically disconnecting slow consumers
+freeing their queues.
+</p>
+
+<p>
+The persistence option saves the broker of OOM, but the performance
+degradation turns the problem even worst for consumers, because now
+every delivery will hit the disk. For continuous data processing,
+this means that when the broker hit the watermark, it will never
+restore the performance of in-memory queues again and database will
+grow infinitely. In this case, a proper database is desirable
+instead of a message queue.
+</p>
+
+<p>
+Kafka is a distributed commit log service with strong guarantees
+that can be used as message broker. To avoid memory starvation
+kafka could be configured to flush data to disk at some time
+interval (log.flush.interval.ms) or flush when a specific amount of
+messages exists in memory (log.flush.interval.messages). The last
+config is much like watermark&rsquo;s configurations, but the
+difference is that it represents the amount of messages, not a size
+in memory. Kafka uses the configuration log.retention.hours to
+determine the amount of time to retain data on disk. The problem of
+slow consumers could be solved slowing down the producers with
+quota&rsquo;s settings (quota.publisher.default) being configured by some
+worker manager.
+</p>
+
+<p>
+Kafka apparently is the broker most prepared for high volume
+continuous data processing pipeline, but this have the cost of
+configurability and tuning.
+</p>
+
+<p>
+The feature that is lacking in all brokers is fixed-size queues
+with synchronization between publishers and consumers.
+</p>
+
+<p>
+Fixed size queues will avoid memory starvation and with synchronism
+the publishers will wait until the consumers are ready to get
+data. The performance of a data pipeline is best measured by the
+performance of the last services of the chaining, because they&rsquo;re
+generating the useful, ready-to-be-used, enriched data. If no
+bottleneck exists in the architecture, with synchronized services
+what we&rsquo;ll achieve is the same performance throughput across the
+entire pipeline (the performance of the slowest service).
+</p>
+
+<p>
+Using the brokerless alternatives cited before we can implement the
+required synchronism and avoid infinite queues, but this requires
+additional <a href="http://hintjens.com/blog:32">service discovery capabilities to every micro-service of the
+architecture</a>.
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> Current situation</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+Today we use RabbitMQ service for message passing inter-teams and
+at several places of architecture and apart from the broker
+problems explained in the last chapter, it proved to be hard
+to achieve high quality code.
+</p>
+
+<p>
+AMQP (Advanced Message Queue Protocol) is a complex bad designed
+specification protocol and because of that, client libraries are
+huge and sometimes buggy. On top of a huge library, the
+specification still imposes a lot of client code to achieve
+durability and reliability. That big amount of code (and tests)
+needs to be written in the correct manner and must be correctly
+tested. Testing is hard because the need for a central complete
+broker (not easy to mock with libraries) and some way to start/stop
+the broker for test re-connection and guarantees (durability). In
+simple words: hard to achieve good quality code.
+</p>
+
+<p>
+For more information about this kind of problems, read the article
+below from one of the AMQP creators:
+</p>
+
+<p>
+<a href="http://www.imatix.com/articles:whats-wrong-with-amqp/">http://www.imatix.com/articles:whats-wrong-with-amqp/</a>
+</p>
+
+<p>
+Other problem is that AMQP specification does not say any words
+about synchronism between publishers and consumers of queues, and
+the broker is designed to be a complete database to store the
+difference between throughput of clients. Sometimes this is a
+desired behavior, but sometimes it is not. If you have a low
+traffic messaging, it works, but using the message broker as a
+database for a large dataset processing requires more database
+capabilities in the broker than messaging (and AMQP is a messaging
+protocol).
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5"><span class="section-number-2">5</span> API</h2>
+<div class="outline-text-2" id="text-5">
+</div><div id="outline-container-sec-5-0-1" class="outline-4">
+<h4 id="sec-5-0-1"><span class="section-number-4">5.0.1</span> Desired goals</h4>
+<div class="outline-text-4" id="text-5-0-1">
+<p>
+Dchan have the goals below:
+</p>
+
+<ul class="org-ul">
+<li>It must have a simple API;
+</li>
+<li>It must support text messages over the wire;
+</li>
+<li>It must support composability or inter-dchan communications;
+</li>
+<li>It must support unicast and multicast;
+</li>
+<li>It must be easy for testing;
+</li>
+<li>It must scale;
+</li>
+</ul>
+
+<p>
+To achieve the first goal dchan uses a file tree interface over
+network. Simple files (real disk files) aren&rsquo;t suitable for IPC
+because of the global nature of the disk incurring races in concurrent
+access between processes. But UNIX operating systems supports the idea
+of virtual file systems (VFS), an abstraction layer on top of a more
+concrete file system, to make possible client application&rsquo;s
+interact with different kind of concrete file systems in a uniform
+way. In practical, VFS is a kernel interface (or contract) to file
+system drivers.
+</p>
+
+<p>
+On linux, every file system driver implements the VFS contract, and
+then it&rsquo;s possible to every program that read and write on files to
+use any file system without code changes. It&rsquo;s good because old tools
+like cat, sed, tail, and so on, can be used for network file systems
+without changes. The VFS is useful to build stackable (or union fs
+mounts) file systems and this will be explained in the <a href="#sec-5-0-11">Composability</a>
+section.
+</p>
+
+<p>
+Network file systems are a class of file systems that (commonly) map
+userspace IO operations into remote procedure calls, turning possible
+interact with remote resources as if it were local. NFS (Network File
+System) and 9P works this way, the former being a very complex
+protocol commonly used with kernel drivers on client and server side,
+but the latter being very simple, allowing userspace file servers. For
+9P exists tons of libraries for various programming languages to
+develop clients and servers. For NFS exists only one server side
+implementation in userspace and no library for creating new file
+servers.
+</p>
+
+<p>
+Dchan uses the 9P as network file system protocol behind the
+scenes. This mean that you can mount the dchan file-tree
+locally and interact with channels as if it were simple files in the
+mounted directory.
+</p>
+
+<p>
+Linux kernel have native support in the kernel to create 9P clients
+(not servers), making easy to mount dchan file trees in each linux box.
+</p>
+
+<p>
+For more information on 9P implementation see the link below:
+</p>
+
+<p>
+<a href="http://9p.cat-v.org/implementations">http://9p.cat-v.org/implementations</a>
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-5-0-2" class="outline-4">
+<h4 id="sec-5-0-2"><span class="section-number-4">5.0.2</span> CSP Communication Semantics</h4>
+<div class="outline-text-4" id="text-5-0-2">
+<p>
+Dchan uses the Communicating Sequential Processing semantics on top of
+the virtual file interface. At core of the CSP semantics are two
+fundamental ideas:
+</p>
+
+<ul class="org-ul">
+<li>Atomic communication
+</li>
+<li>Non-deterministic choice.
+</li>
+</ul>
+
+<p>
+It&rsquo;s the same concepts as independently defined by Robin Milner in the
+Calculus of Communicating Systems (CCS)<sup><a id="fnr.1" name="fnr.1" class="footref" href="#fn.1">1</a></sup>.
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-5-0-3" class="outline-4">
+<h4 id="sec-5-0-3"><span class="section-number-4">5.0.3</span> Atomic communication</h4>
+<div class="outline-text-4" id="text-5-0-3">
+<p>
+Atomic communication is obtained by rendezvous points. Rendezvous
+points are places in time and space, where processes who are trying to
+communicate, meet each other in order to occur the communication. During
+rendezvous both the sender and receiver processes block until the
+other side is ready to communicate and implies that the sending and
+receiving of a message occurs simultaneously.
+</p>
+
+<blockquote>
+<p>
+A real world analogy to rendezvous can be found in telephone
+communications (without answering machines). Both the caller and
+callee must be simultaneously present for a phone conversation to
+occur.
+Neil Smith at <a href="http://ptolemy.eecs.berkeley.edu/papers/99/HMAD/html/csp.html">CSP Domain</a>
+</p>
+</blockquote>
+
+<p>
+The image below shows the communication between Process A and B. At
+some moment in time Process A blocks in the Send call because of
+Process B isn&rsquo;t ready to communicate. When Process B calls Recv, the
+communication happens, data is transferred from Process A to B and
+Process A finally unblock and continue execution.
+</p>
+
+
+<div class="figure">
+<p><img src="images/rendezvous.png" alt="rendezvous.png" />
+</p>
+</div>
+
+<p>
+Depending on the CSP implementation, channels can be buffered, in
+other words, in this way it&rsquo;s a queue with limited size. But
+independently of channel type, the following is true:
+</p>
+
+<blockquote>
+<p>
+Senders will block when channel is full and receivers will block when
+channel is empty.  The communication is atomic only when the channel
+is unbuffered.
+</p>
+</blockquote>
+
+<p>
+Then, when the channel is unbuffered, senders will always block
+waiting for a receivers and receivers will always block waiting for a
+sender.
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-5-0-4" class="outline-4">
+<h4 id="sec-5-0-4"><span class="section-number-4">5.0.4</span> Non-deterministic choice</h4>
+<div class="outline-text-4" id="text-5-0-4">
+<p>
+Non-deterministic choice provides processes with the ability to
+randomly select between a set of possible atomic communications. In
+the Go programming language the construct for this is called
+&ldquo;select"<sup><a id="fnr.2" name="fnr.2" class="footref" href="#fn.2">2</a></sup>, other languages call it &ldquo;alt&rdquo;. Select statements
+choose which of a set of possible send or receive operations will
+proceed and is very useful when dealing with more than 1 channel per
+process.
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-5-0-5" class="outline-4">
+<h4 id="sec-5-0-5"><span class="section-number-4">5.0.5</span> Dchan CSP semantics</h4>
+<div class="outline-text-4" id="text-5-0-5">
+<p>
+Dchan supports atomic communications and it is guaranteed to be atomic
+across the network with the help of the 9P file abstraction.
+</p>
+
+<p>
+Non-deterministic choice, in the other hand, is a much more complex
+task to implement in distributed way and escapes from the file
+semantics. The problem arises from the fact that it requires a special
+API to &ldquo;mark&rdquo; a set of channels to participate in the &ldquo;select&rdquo;, but
+the most closest file&rsquo;s syscall to achieve this transparently are
+select/poll/epoll, but they doesn&rsquo;t map to any 9P message in the
+protocol. Dchan doesn&rsquo;t support &ldquo;select&rdquo;, but apart from being complex
+to implement and requiring an API, it could be implemented in the
+future.
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-5-0-6" class="outline-4">
+<h4 id="sec-5-0-6"><span class="section-number-4">5.0.6</span> Client interface</h4>
+<div class="outline-text-4" id="text-5-0-6">
+<p>
+To mount a new dchan file server is required only few commands.
+On a stock linux kernel, what you need to type is:
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-bash">mkdir -p /n/dchan
+mount -t 9p -o port=6666,dfltuid=`id -u`,dfltgid=`id -g` \
+    192.168.10.56 /n/dchan &lt;ip-of-dchan-server&gt; /n/dchan
+</pre>
+</div>
+
+<p>
+The mount command above will use the linux kernel to establish a new
+client connection to the file server. Once established, the kernel
+will present the remote file system in the /n/dchan directory. After
+that you can use traditional unix tools (file, cat, sed, etc) to
+interact with the files on it.
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-5-0-7" class="outline-4">
+<h4 id="sec-5-0-7"><span class="section-number-4">5.0.7</span> Trade-offs</h4>
+<div class="outline-text-4" id="text-5-0-7">
+<p>
+Using a file interface have several benefits, but some problems
+too.
+</p>
+
+<ul class="org-ul">
+<li>Error handling: The network is a lot more unreliable than local disk
+and this can be a source of problems if programmers do not
+understand this correctly. The majority of software does not handle
+disk failures and does not try to remount the file system if the
+hardware enter in a failure state, but when using network, failures
+happens all the time and programs needs to be aware of that.
+</li>
+
+<li>Framing: Each software in the conversation needs to agree in what is
+their understanding of a message. If no convention is used between
+all of the softwares, then some kind of framing protocol must be
+used to ensure only complete messages are interpreted. The problem
+arises from two facts: First, each software can use whatever value
+it want in the amount of bytes of the read and write syscalls,
+leading to some programs processing incomplete messages if the
+amount of bytes disagree. Second, sending bytes over the network
+link isn&rsquo;t an atomic operation, and for that reason, send/write
+syscalls for socket commonly returns the amount of bytes completely
+sent. If the other end cannot identify that the packets received
+aren&rsquo;t a complete message then it can process corrupt or incomplete
+data.
+</li>
+</ul>
+
+
+<p>
+Solutions to the problems above are proposed in the section
+<a href="#sec-10-2">Implementation</a>.
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-5-0-8" class="outline-4">
+<h4 id="sec-5-0-8"><span class="section-number-4">5.0.8</span> Messaging</h4>
+<div class="outline-text-4" id="text-5-0-8">
+<p>
+Using a file interface messaging is simpler:
+</p>
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">syscall</th>
+<th scope="col" class="left">dchan semantics / effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left">open</td>
+<td class="left">Open an existing channel</td>
+</tr>
+
+<tr>
+<td class="left">open(OCREAT)</td>
+<td class="left">Create a new channel</td>
+</tr>
+
+<tr>
+<td class="left">read</td>
+<td class="left">Read messages from channel</td>
+</tr>
+
+<tr>
+<td class="left">write</td>
+<td class="left">Write a message into channel</td>
+</tr>
+
+<tr>
+<td class="left">stat</td>
+<td class="left">Get info of channel</td>
+</tr>
+
+<tr>
+<td class="left">close</td>
+<td class="left">Close the channel</td>
+</tr>
+
+<tr>
+<td class="left">unlink</td>
+<td class="left">Remove an existing channel</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div id="outline-container-sec-5-0-9" class="outline-4">
+<h4 id="sec-5-0-9"><span class="section-number-4">5.0.9</span> Text messages</h4>
+<div class="outline-text-4" id="text-5-0-9">
+<p>
+Dchan has the principle of being simple and easy to debug. To the
+latter be possible, is strongly encouraged the use of text-based
+messages instead of binary or compacted text. We&rsquo;ll not optimize it
+for performance until we really reach that point.
+</p>
+
+<p>
+Using a text message format we can simplify both the clients and
+server.
+</p>
+
+<ul class="org-ul">
+<li>No need for libraries to encode/decode messages;
+</li>
+<li>Easy to debug in the network;
+</li>
+<li>Easy to testing;
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-sec-5-0-10" class="outline-4">
+<h4 id="sec-5-0-10"><span class="section-number-4">5.0.10</span> Ctl</h4>
+<div class="outline-text-4" id="text-5-0-10">
+<p>
+Dchan has only one special served file called ctl to manage channel
+metrics and settings.
+</p>
+</div>
+
+<ol class="org-ol"><li><a id="sec-5-0-10-1" name="sec-5-0-10-1"></a>Metrics<br  /><div class="outline-text-5" id="text-5-0-10-1">
+<p>
+The only metrics exposed until now is:
+</p>
+
+<ul class="org-ul">
+<li>rx - Receiver rate in messages/second.
+</li>
+<li>tx - Transmission rate in messages/second.
+</li>
+<li>arx - Average rx.
+</li>
+<li>atx - Average tx.
+</li>
+</ul>
+
+<p>
+You can get this statistics reading the ctl file, like below:
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-bash">$ cd /n/dchan
+$ cat ctl
+/core/input    0    25221    25221    25221    25221
+/data/input    256  35002    34255    36222    36025
+</pre>
+</div>
+
+<p>
+The output format is:
+</p>
+
+<pre class="example">
+&lt;filename&gt;    &lt;channel size&gt;    &lt;rx&gt;    &lt;tx&gt;    &lt;arx&gt;    &lt;atx&gt;
+</pre>
+
+<p>
+The blank separator is TAB.
+</p>
+
+<p>
+The metrics are updated each second.
+</p>
+</div>
+</li>
+
+<li><a id="sec-5-0-10-2" name="sec-5-0-10-2"></a>Settings<br  /><div class="outline-text-5" id="text-5-0-10-2">
+<p>
+For now, there&rsquo;s only one setting available: channel size.
+</p>
+
+<p>
+See below the format to update the channel size for file /data/input:
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-bash">$ cd /n/dchan
+$ mkdir data
+$ touch data/input
+$ cat ctl
+/data/input    0    0    0    0    0
+$ echo "/data/input 256" &gt;&gt; ctl
+</pre>
+</div>
+
+<p>
+The size of channel can be updated at any time, but be aware that during
+the update of channel the file operations on this specific file will
+block until finished.
+</p>
+</div>
+</li></ol>
+</div>
+
+<div id="outline-container-sec-5-0-11" class="outline-4">
+<h4 id="sec-5-0-11"><span class="section-number-4">5.0.11</span> Composability</h4>
+<div class="outline-text-4" id="text-5-0-11">
+<p>
+It&rsquo;s possible to create a virtual file system representation of
+multiple dchan file servers. It&rsquo;s useful for inter-teams
+communications without the need of using a central dchan server.
+This feature is given by union file system capabilities of the
+Operating System.
+</p>
+
+<p>
+The Linux and BSD kernels supports various flavours of union file
+system drivers, but this section will demonstrate the use of the most
+recent union file system of the Linux Kernel called `overlayfs`.
+</p>
+
+<p>
+From Linux documentation:
+</p>
+
+<blockquote>
+<p>
+An overlay filesystem combines two filesystems - an &lsquo;upper&rsquo; filesystem
+and a &lsquo;lower&rsquo; filesystem.  When a name exists in both filesystems, the
+object in the &lsquo;upper&rsquo; filesystem is visible while the object in the
+&lsquo;lower&rsquo; filesystem is either hidden or, in the case of directories,
+merged with the &lsquo;upper&rsquo; object. <div
+align="right"><i>Neil Brown in <a href="https://www.kernel.org/doc/Documentation/filesystems/overlayfs.txt">OverlayFS Documentation</a>.</i></div>
+</p>
+</blockquote>
+
+<p>
+Using this concept is possible to create file trees composed of
+multiple dchan servers without the needs of implementing anything on
+it.
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-5-0-12" class="outline-4">
+<h4 id="sec-5-0-12"><span class="section-number-4">5.0.12</span> Testing</h4>
+<div class="outline-text-4" id="text-5-0-12">
+<p>
+Developing a distributed software involves lots of testing because
+failures occurs very frequently. When you build a local software, with
+the entire business logic running at one local memory address space,
+we can ignore the majority of operating system and hardware faults and
+focus only in testing the logic inside the program&rsquo;s source code. But
+when software&rsquo;s logic is spread in the network, several classes of
+bugs can arises because pieces of the logic are on a remote machine.
+</p>
+
+<p>
+On linux, any file system syscall executed on a disconnected mounted
+9P file system will result in a -EIO error (Input/Output
+error). Applications using dchan should verify the return value of
+read/write functions and, if the value returned is -EIO, then it
+should re-open the file when a re-connection with the file server is
+finished. To re-connect, a new mount syscall establishing a new client
+connection with the file server is required. Linux mount supports the
+remount option, enabling then to reuse the mount point already used by
+applications (no need to cwd again to directory). The remount can be
+done explicitly by the application using dchan or by an external
+software. This topic will be more detailed in the section <a href="#sec-10-4">dchan-proxy</a>.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-6" class="outline-2">
+<h2 id="sec-6"><span class="section-number-2">6</span> Terminology</h2>
+<div class="outline-text-2" id="text-6">
+<p>
+This document uses a number of terms to refer to the roles played by
+participants in, and objects of, the Dchan communication.
+</p>
+
+<ul class="org-ul">
+<li>goroutine: Go lightweight threads that represent anonymous processes
+in the CSP terminology.
+</li>
+<li>channel: Entity shared between processes whose purpose is to provide
+means of communication.
+</li>
+<li>Rprocess: Reader goroutine of a read 9P request.
+</li>
+<li>Wprocess: Writer goroutine of a write 9P request.
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-sec-7" class="outline-2">
+<h2 id="sec-7"><span class="section-number-2">7</span> Architecture</h2>
+<div class="outline-text-2" id="text-7">
+<p>
+Dchan is a file server that exposes the Go channels with a file tree
+interface. Every new 9P connection established will create a new
+goroutine for handle the subsequent requests and every created file in
+the tree will spawn 2 other goroutines (one for read and one for write
+requests) and create a channel shared between this two goroutines.
+</p>
+
+<p>
+The size of channels is 0 (unbuffered) by default and it can be
+changed using the ctl file.
+</p>
+
+<p>
+Every read request will block Rprocess when the channel is empty. And
+every write request will block the Wprocess when the channel is
+full. When the channel is unbuffered, the communication is atomic
+inside Dchan, as stated by CSP concepts explained in the chapter <a href="#sec-5-0-2">CSP
+Communication Semantics</a>.
+</p>
+
+<p>
+To guarantee the atomicity of the messaging across Dchan clients the
+messaging algorithm need to be designed in some way that Wprocess only
+returns to the caller when Rprocess successfully delivered the message
+to the client consumer.
+</p>
+
+<p>
+When channel is unbuffered (with size equals 0), the file server
+<b>do not</b> store the messages in any way, it only transfer the written data
+from the Wprocess to Rprocess, that will then deliver the data
+to the consumer. Dchan is only able to guarantee that data was
+delivered to some consumer in unbuffered mode.
+</p>
+
+<p>
+Dchan exposes only one file for settings and metrics. It is called
+<b><b>ctl</b></b> and remove or change of metadata (wstat) is forbidden on it.
+The system supports dynamic change of settings by writing to this file.
+Read the file to get the current settings and metrics.
+More information about settings and metrics in the <a href="#sec-5-0-10">Ctl</a> section.
+</p>
+
+<p>
+Dchan-proxy is a local unix socket 9P server created to simplify
+client applications, avoiding other semantics related to network
+connection in apps trying to communicate.  The linux kernel will
+establish a 9P connection to dchan-proxy for each application, and
+dchan-proxy will establish a 9P connection over TCP with
+dchan. Dchan-proxy will proxy 9P requests to dchan server, but it is
+designed for block the client in the file&rsquo;s syscalls in case of
+network failure with dchan. It stores the state of call and re-apply
+when re-connected. This way, client applications will never know that
+something bad occurred in the network (except that some syscalls like
+read blocked for some time).
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-8" class="outline-2">
+<h2 id="sec-8"><span class="section-number-2">8</span> Makefile</h2>
+<div class="outline-text-2" id="text-8">
+<p>
+First of all, we need a Makefile to build this document and source
+code.
+</p>
+
+<p>
+The most used commands are:
+</p>
+
+<ul class="org-ul">
+<li><b><b>make</b></b> to make a full rebuild of everything.
+</li>
+<li><b><b>make tangle</b></b> to extract source code
+</li>
+<li><b><b>make build</b></b> to build dchan software
+</li>
+</ul>
+
+<div class="org-src-container">
+
+<pre class="src src-makefile"><span class="org-makefile-targets">.PHONY</span>: build clean clean-source clean-latex tangle test test-proxy test-dchan
+
+
+<span class="org-comment-delimiter"># </span><span class="org-comment">To install `dchan', type `make' and then `make install'.</span>
+<span class="org-variable-name">BIN_DIR</span>=/usr/local/bin
+<span class="org-variable-name">DCHAN_SRC</span>=$(<span class="org-variable-name">wildcard</span> unix/dchan/*.org)
+<span class="org-variable-name">PROXY_SRC</span>=unix/proxy/proxy.org
+<span class="org-variable-name">TEST_SRC</span>=$(<span class="org-variable-name">wildcard</span> unix/testing/*.org)
+<span class="org-variable-name">OBJS</span>=   unix/dchan/dchan \
+        unix/proxy/proxy
+<span class="org-variable-name">DOC_BOOK</span>=dchan.org
+<span class="org-variable-name">HTMLS</span>=$(<span class="org-variable-name">patsubst</span> %.org,%.html,$(<span class="org-variable-name">DOC_BOOK</span>))
+<span class="org-variable-name">TXTS</span>=$(<span class="org-variable-name">patsubst</span> %.org,%.txt,$(<span class="org-variable-name">DOC_BOOK</span>))
+<span class="org-variable-name">PDFS</span>=$(<span class="org-variable-name">patsubst</span> %.org,%.pdf,$(<span class="org-variable-name">DOC_BOOK</span>))
+
+<span class="org-makefile-targets">all</span>: tangle clean tangle test $(<span class="org-variable-name">HTMLS</span>) $(<span class="org-variable-name">TXTS</span>) $(<span class="org-variable-name">PDFS</span>)
+
+<span class="org-makefile-targets">clean-latex</span>:
+        rm -f *.blg *.bbl *.tex *.odt *.toc *.out *.aux
+
+<span class="org-makefile-targets">clean-source</span>:
+        <span class="org-type">-</span><span class="org-makefile-shell">cd unix/dchan/ &amp;&amp; make clean</span>
+        <span class="org-type">-</span><span class="org-makefile-shell">cd unix/proxy/ &amp;&amp; make clean</span>
+
+<span class="org-makefile-targets">clean</span>: clean-latex clean-source
+        rm -f *.pngt
+        rm -f *.txt *.html *.pdf *.odt
+        rm -f *.log
+
+<span class="org-makefile-targets">%.html</span>: %.org
+        org2html $<span class="org-constant">&lt;</span>
+
+<span class="org-makefile-targets">%.txt</span>: %.org
+        org2txt $<span class="org-constant">&lt;</span>
+
+<span class="org-makefile-targets">%.pdf</span>: %.org
+        org2pdf $<span class="org-constant">&lt;</span>
+        <span class="org-type">-</span><span class="org-makefile-shell">pdflatex dchan.tex</span>
+        bibtex dchan
+        pdflatex dchan.tex
+        pdflatex dchan.tex
+
+<span class="org-makefile-targets">tangle</span>:
+        org-tangle $(<span class="org-variable-name">DOC_BOOK</span>) &amp;&amp; \
+        org-tangle $(<span class="org-variable-name">TEST_SRC</span>) &amp;&amp; \
+        org-tangle $(<span class="org-variable-name">DCHAN_SRC</span>) &amp;&amp; \
+        org-tangle $(<span class="org-variable-name">PROXY_SRC</span>)
+
+<span class="org-makefile-targets">build</span>: tangle
+        cd unix/dchan/ &amp;&amp; make build
+        cd unix/proxy/ &amp;&amp; make build
+
+<span class="org-makefile-targets">doc</span>: $(<span class="org-variable-name">HTMLS</span>) $(<span class="org-variable-name">PDFS</span>) $(<span class="org-variable-name">TXTS</span>)
+
+<span class="org-makefile-targets">test-dchan</span>: tangle
+        cd unix/dchan/ &amp;&amp; make test
+
+<span class="org-makefile-targets">test-proxy</span>: tangle
+        cd unix/proxy/ &amp;&amp; make test
+
+<span class="org-makefile-targets">test</span>: tangle test-dchan test-proxy
+
+<span class="org-makefile-targets">install</span>:
+        cp $(<span class="org-variable-name">OBJS</span>) $(<span class="org-variable-name">BIN_DIR</span>)
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-sec-9" class="outline-2">
+<h2 id="sec-9"><span class="section-number-2">9</span> Testing infrastructure</h2>
+<div class="outline-text-2" id="text-9">
+<p>
+One of the greatest motivations for create dchan was testing. It&rsquo;s
+very hard to test messaging nowadays, because of very complex TCP
+protocols and bigger responsability on the client side to guarantee
+reliability of the architecture.
+</p>
+
+<p>
+Dchan shall expose a simple testing interface.
+</p>
+
+<p>
+We&rsquo;ll start writing simple tests to verify the contracts
+established in the <a href="#sec-5">API</a> chapter.
+</p>
+
+<p>
+The first tests will verify if dchan exposes a sane file-system
+interface. We shall be able to create, delete (unlink), write,
+read and stat files.
+</p>
+</div>
+
+<div id="outline-container-sec-9-1" class="outline-3">
+<h3 id="sec-9-1"><span class="section-number-3">9.1</span> Setup and teardown</h3>
+<div class="outline-text-3" id="text-9-1">
+<p>
+Every test must mount a dchan directory on startup and unmount
+when finished.
+</p>
+
+<p>
+The easiest way to handle file-system mounts is using shell
+scripts. The setup function must:
+</p>
+
+<ol class="org-ol">
+<li>Create the target dchan directory (eg.: /tmp/dchan)
+</li>
+<li>Run dchan daemon
+</li>
+<li>Mount dchan on target directory using a non-privileged user;
+<ol class="org-ol">
+<li>Use FUSE until Linux user namespace isnt stable
+</li>
+</ol>
+</li>
+</ol>
+
+<p>
+If something fail in the steps above, the operating system should
+be rollback (kill dchan daemon, unmount, delete target dir).
+</p>
+
+<p>
+The testing infrastructure should be used as a bash
+library. Modules must include (or <i>source helper.sh</i>) and invoke
+the right functions for setup and teardown.
+</p>
+
+<p>
+The <i>setup</i> function invokes the 9P daemon using a cmdline passed
+as third argument and then uses 9pfuse to connect to 9P daemon at
+second argument (take careful and set this correctly in the
+cmdline argument) and mount the file system in the directory
+passed as first argument of the function.
+</p>
+
+<p>
+The PID of the invoked daemon is stored in the DAEMONPID global
+variable. Setup will wait for daemon initialization and FUSE
+connection before return. The number of seconds to delay is
+configured by global variable DELAY and you should update the
+value according to requirements of your daemon if needed. DELAY
+default value is 2. Setup stores the <i>targetdir</i> argument in the
+TARGETDIR global variable to used by <i>cleanup</i> TRAP function if
+the tests are stopped (by typing CTRL-C on console).
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-sh" id="src-tests-fn-setup"><span class="org-comment-delimiter"># </span><span class="org-comment">Setup prepares the environment for 9P file system tests.</span>
+<span class="org-comment-delimiter"># </span><span class="org-comment">It receives the target directory, the address to connect to and</span>
+<span class="org-comment-delimiter"># </span><span class="org-comment">9P daemon command line as parameters.</span>
+<span class="org-keyword">function</span> <span class="org-function-name">setup</span> {
+    <span class="org-builtin">local</span> <span class="org-variable-name">targetdir</span>=<span class="org-string">"$1"</span>
+    <span class="org-builtin">local</span> <span class="org-variable-name">addr</span>=<span class="org-string">"$2"</span>
+    <span class="org-builtin">local</span> <span class="org-variable-name">cmdline</span>=<span class="org-string">"$3"</span>
+    <span class="org-builtin">local</span> <span class="org-variable-name">cwd</span>=<span class="org-string">"$(</span><span class="org-sh-quoted-exec">pwd</span><span class="org-string">)"</span>
+
+    <span class="org-variable-name">TARGETDIR</span>=<span class="org-string">"${targetdir}"</span>
+
+    <span class="org-builtin">cd</span> ../..
+
+    <span class="org-comment-delimiter"># </span><span class="org-comment">Invokes the daemon</span>
+    <span class="org-builtin">eval</span> <span class="org-string">"${cmdline} &amp;"</span>
+
+    <span class="org-keyword">if</span> [ <span class="org-string">"$?"</span> != <span class="org-string">"0"</span> ]; <span class="org-keyword">then</span>
+        <span class="org-builtin">echo</span> <span class="org-string">"Failed to start daemon... Exiting ..."</span>
+        teardown <span class="org-string">"${targetdir}"</span> <span class="org-string">""</span>
+        <span class="org-keyword">exit</span> 1
+    <span class="org-keyword">fi</span>
+
+    <span class="org-variable-name">DAEMONPID</span>=$<span class="org-variable-name">!</span>
+
+    <span class="org-comment-delimiter"># </span><span class="org-comment">wait for daemon initialization</span>
+    sleep <span class="org-string">"${DELAY}"</span>
+
+    mkdir -p <span class="org-string">"${targetdir}"</span>
+
+    9pfuse <span class="org-string">"${addr}"</span> <span class="org-string">"${targetdir}"</span>
+
+    <span class="org-keyword">if</span> [ <span class="org-string">"$?"</span> != <span class="org-string">"0"</span> ]; <span class="org-keyword">then</span>
+        <span class="org-builtin">echo</span> <span class="org-string">"Failed to mount 9P"</span>
+        teardown <span class="org-string">"${targetdir}"</span> <span class="org-string">"${DAEMONPID}"</span>
+        <span class="org-keyword">exit</span> 1
+    <span class="org-keyword">fi</span>
+
+    <span class="org-comment-delimiter"># </span><span class="org-comment">wait for 9P client-server handshake</span>
+    sleep <span class="org-string">"${DELAY}"</span>
+
+    <span class="org-builtin">cd</span> <span class="org-string">"${cwd}"</span>
+
+    <span class="org-keyword">if</span> [ <span class="org-string">"$?"</span> != <span class="org-string">"0"</span> ]; <span class="org-keyword">then</span>
+        <span class="org-builtin">echo</span> <span class="org-string">"Failed to enter into dchan directory"</span>
+        teardown <span class="org-string">"${targetdir}"</span> <span class="org-string">"${DCHANPID}"</span>
+        <span class="org-keyword">exit</span> 1
+    <span class="org-keyword">fi</span>
+
+    <span class="org-builtin">echo</span> <span class="org-string">"###########################"</span>
+    mount | grep <span class="org-string">"${targetdir}"</span>
+    <span class="org-builtin">echo</span> <span class="org-string">"###########################"</span>
+
+    <span class="org-keyword">if</span> [ <span class="org-string">"`mount | grep \"${targetdir}\"`"</span> == <span class="org-string">""</span> ]; <span class="org-keyword">then</span>
+        <span class="org-builtin">echo</span> <span class="org-string">"Not mounted yet. Try again with higher delay time..."</span>
+        teardown <span class="org-string">"${targetdir}"</span> <span class="org-string">"${DAEMONPID}"</span>
+        <span class="org-keyword">exit</span> 1
+    <span class="org-keyword">fi</span>
+}
+</pre>
+</div>
+
+<p>
+Teardown should undo the changes made in the environment.
+</p>
+
+<ol class="org-ol">
+<li>Unmount 9P server;
+</li>
+<li>Kill 9P file server daemon;
+</li>
+<li>Remove target directory;
+</li>
+</ol>
+
+<p>
+Below is the teardown function:
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-sh" id="src-tests-fn-teardown"><span class="org-comment-delimiter"># </span><span class="org-comment">teardown(dchandir, dchanpid)</span>
+<span class="org-comment-delimiter"># </span><span class="org-comment">targetdir -&gt; target directory</span>
+<span class="org-comment-delimiter"># </span><span class="org-comment">daemonpid -&gt; pid of 9P file server daemon</span>
+<span class="org-keyword">function</span> <span class="org-function-name">teardown</span> {
+    <span class="org-builtin">local</span> <span class="org-variable-name">targetdir</span>=<span class="org-string">"$1"</span>
+    <span class="org-builtin">local</span> <span class="org-variable-name">daemonpid</span>=<span class="org-string">"$2"</span>
+
+    <span class="org-comment-delimiter"># </span><span class="org-comment">first go far away</span>
+    <span class="org-builtin">cd</span> /
+
+    <span class="org-keyword">if</span> [ <span class="org-string">"$targetdir}"</span> != <span class="org-string">""</span> ]; <span class="org-keyword">then</span>
+        unmount <span class="org-string">"${targetdir}"</span>
+        rm -rf <span class="org-string">"${targetdir}"</span>
+    <span class="org-keyword">fi</span>
+
+    <span class="org-keyword">if</span> [ <span class="org-string">"${daemonpid}"</span> != <span class="org-string">""</span> ]; <span class="org-keyword">then</span>
+       <span class="org-builtin">kill</span> <span class="org-string">"${daemonpid}"</span>
+    <span class="org-keyword">fi</span>
+}
+</pre>
+</div>
+
+<p>
+The cleanup function is executed in case of CTRL-C being invoked
+by user.
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-sh" id="src-tests-fn-cleanup"><span class="org-comment-delimiter"># </span><span class="org-comment">trap ctrl-c and call cleanup()</span>
+<span class="org-keyword">trap</span> cleanup INT
+
+<span class="org-keyword">function</span> <span class="org-function-name">cleanup</span>() {
+        <span class="org-builtin">echo</span> <span class="org-string">"** Trapped CTRL-C"</span>
+        teardown <span class="org-string">"${TARGETDIR}"</span> <span class="org-string">"${DAEMONPID}"</span>
+        <span class="org-keyword">exit</span> 1
+}
+</pre>
+</div>
+
+<p>
+Setup and Teardown are provided by unix/testing/helpers.sh bash
+library.
+</p>
+
+<p>
+The setup and teardown functions above are all you should need to
+test the file tree interface. For example, to test if the file
+server is mounting a file tree with success, the changedir
+function below can be used:
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-sh" id="src-tests-fn-testchangedir"><span class="org-keyword">function</span> <span class="org-function-name">testchangedir</span> {
+    <span class="org-builtin">local</span> <span class="org-variable-name">dir</span>=<span class="org-string">"$1"</span>
+    <span class="org-builtin">local</span> <span class="org-variable-name">cwd</span>=<span class="org-string">"$(</span><span class="org-sh-quoted-exec">pwd</span><span class="org-string">)"</span>
+
+
+    <span class="org-builtin">cd</span> <span class="org-string">"${dir}"</span>
+
+    <span class="org-keyword">if</span> [ <span class="org-string">"$?"</span> != <span class="org-string">"0"</span> ]; <span class="org-keyword">then</span>
+        <span class="org-builtin">echo</span> <span class="org-string">"Failed to enter into directory: ${dir}"</span>
+        <span class="org-keyword">exit</span> 1
+    <span class="org-keyword">fi</span>
+}
+</pre>
+</div>
+
+<p>
+The complete test file can be something like:
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-sh" id="src-tests-example"><span class="org-builtin">.</span> ./unix/testing/helpers.sh
+
+<span class="org-keyword">function</span> <span class="org-function-name">testchangedir</span> {
+    <span class="org-builtin">local</span> <span class="org-variable-name">dir</span>=<span class="org-string">"$1"</span>
+    <span class="org-builtin">local</span> <span class="org-variable-name">cwd</span>=<span class="org-string">"$(</span><span class="org-sh-quoted-exec">pwd</span><span class="org-string">)"</span>
+
+
+    <span class="org-builtin">cd</span> <span class="org-string">"${dir}"</span>
+
+    <span class="org-keyword">if</span> [ <span class="org-string">"$?"</span> != <span class="org-string">"0"</span> ]; <span class="org-keyword">then</span>
+        <span class="org-builtin">echo</span> <span class="org-string">"Failed to enter into directory: ${dir}"</span>
+        <span class="org-keyword">exit</span> 1
+    <span class="org-keyword">fi</span>
+}
+
+setup <span class="org-string">"/tmp/dchan"</span> <span class="org-string">"tcp!localhost!6666"</span> <span class="org-string">"dchan -addr :6666 -d"</span>
+
+testchangedir <span class="org-string">"/tmp/dchan"</span>
+
+teardown <span class="org-string">"/tmp/dchan"</span> <span class="org-string">"${DAEMONPID}"</span>
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-10" class="outline-2">
+<h2 id="sec-10"><span class="section-number-2">10</span> Development</h2>
+<div class="outline-text-2" id="text-10">
+<p>
+As stated before, Dchan is a literate program, then this document is
+all you need to understand all of it&rsquo;s concepts, design choices,
+and get the source code.
+</p>
+
+<p>
+It was developed using <a href="http://orgmode.org/">orgmode</a>, but isn&rsquo;t required to use emacs to
+build or contribute to the project. The project is composed of org
+files and a full featured Makefile. The Makefile have all of the
+commands you need to generate the book on various formats, extract the
+source code, build the software, execute tests, and so on.
+</p>
+
+<p>
+If you use Emacs editor, you don&rsquo;t need this Makefile at all, because
+orgmode is fully integrated.
+</p>
+
+<p>
+For non-emacs developers, the development process is:
+</p>
+
+<ol class="org-ol">
+<li>Change org files;
+</li>
+<li>Run make
+</li>
+</ol>
+
+<p>
+<b>Never touch the generated source code.</b>
+</p>
+</div>
+
+<div id="outline-container-sec-10-1" class="outline-3">
+<h3 id="sec-10-1"><span class="section-number-3">10.1</span> Dependencies</h3>
+<div class="outline-text-3" id="text-10-1">
+<ul class="org-ul">
+<li>Org dependency
+</li>
+</ul>
+
+<p>
+If you use Emacs, everything is already installed.
+</p>
+
+<p>
+For non-emacs developers, install <a href="https://github.com/fniessen/orgmk">orgmk</a>.
+</p>
+
+<ul class="org-ul">
+<li>Go
+</li>
+</ul>
+
+<p>
+Read the <a href="https://golang.org/doc/install">Go Getting started</a> tutorial.
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-10-2" class="outline-3">
+<h3 id="sec-10-2"><span class="section-number-3">10.2</span> Implementation</h3>
+<div class="outline-text-3" id="text-10-2">
+</div><div id="outline-container-sec-10-2-1" class="outline-4">
+<h4 id="sec-10-2-1"><span class="section-number-4">10.2.1</span> Dchan</h4>
+<div class="outline-text-4" id="text-10-2-1">
+</div><ol class="org-ol"><li><a id="sec-10-2-1-1" name="sec-10-2-1-1"></a>Source Makefile<br  /><div class="outline-text-5" id="text-10-2-1-1">
+<div class="org-src-container">
+
+<pre class="src src-makefile"><span class="org-makefile-targets">all</span>: clean tangle build test
+
+<span class="org-makefile-targets">tangle</span>:
+        org-tangle dchan.org
+
+<span class="org-makefile-targets">deps</span>:
+        go get -v -t ./...
+
+<span class="org-makefile-targets">build</span>: tangle deps
+        go build -v
+
+<span class="org-makefile-targets">test</span>: tangle build
+        chmod +x tests/acceptance/*.sh
+        ./tests/acceptance/vfs.sh
+
+<span class="org-makefile-targets">clean</span>:
+        rm -f tests/acceptance/*.sh
+        rm -f *.go
+</pre>
+</div>
+</div>
+</li>
+
+<li><a id="sec-10-2-1-2" name="sec-10-2-1-2"></a>Introduction<br  /><div class="outline-text-5" id="text-10-2-1-2">
+<p>
+Dchan is a 9P file server developed with go9p library. This
+library resembles the old plan9&rsquo;s lib9p, but with some
+simplifications in the API. Behind the good design of lib9p and
+go9p is where dchan really shines. They provide a server
+abstraction that simplify dchan implementation. The file server
+author doesn&rsquo;t need to worry about the 9P protocol internals
+working, focusing on the 9P file messages only. Then Dchan logic
+is most related to CSP than 9P semantics.
+</p>
+
+<p>
+For more information about Dchan design see the <a href="#sec-7">Architecture
+section</a>.
+</p>
+</div>
+</li>
+
+<li><a id="sec-10-2-1-3" name="sec-10-2-1-3"></a>Acceptance testings<br  /><div class="outline-text-5" id="text-10-2-1-3">
+<p>
+Dchan is a 9P file server, then the most basic acceptance tests
+are related to the exposed file tree interface. It must be
+consistent and behave as a local disk file system. Traditional
+unix tools as <i>cat</i>, <i>grep</i>, <i>sed</i>, <i>tee</i>, etc, must work without
+problems.
+</p>
+
+<p>
+Dchan acceptance tests uses the <i>Testing Infrastructure</i> created
+before.
+</p>
+</div>
+
+<ol class="org-ol"><li><a id="sec-10-2-1-3-1" name="sec-10-2-1-3-1"></a>Ensures dchan is mountable on UNIX<br  /><div class="outline-text-6" id="text-10-2-1-3-1">
+<p>
+This tests only ensures dchan is a mountable fs and clients can
+change the current directory to the mounted one (cd /tmp/dchan).
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-sh" id="src-dchan-tests-acceptance-vfs"><span class="org-builtin">set</span> -e
+
+<span class="org-builtin">.</span> ../testing/helpers.sh
+
+<span class="org-variable-name">DAEMONPID</span>=<span class="org-string">""</span>
+
+<span class="org-keyword">function</span> <span class="org-function-name">startDchan</span> {
+    <span class="org-builtin">local</span> <span class="org-variable-name">cwd</span>=<span class="org-string">"$(</span><span class="org-sh-quoted-exec">pwd</span><span class="org-string">)"</span>
+
+    ./dchan -addr <span class="org-string">":6666"</span> -d &amp;
+
+    <span class="org-variable-name">BACKENDPID</span>=$<span class="org-variable-name">!</span>
+
+    <span class="org-builtin">cd</span> <span class="org-string">"${cwd}"</span>
+}
+
+<span class="org-keyword">function</span> <span class="org-function-name">changedir</span> {
+    <span class="org-builtin">local</span> <span class="org-variable-name">targetdir</span>=<span class="org-string">"$1"</span>
+
+    <span class="org-builtin">cd</span> <span class="org-string">"${targetdir}"</span> || <span class="org-builtin">echo</span> <span class="org-string">"ACCEPTANCE TEST ERROR: Unable to cd into mount point"</span>
+}
+
+<span class="org-keyword">function</span> <span class="org-function-name">readctl</span> {
+    <span class="org-builtin">local</span> <span class="org-variable-name">mntp</span>=<span class="org-string">"$1"</span>
+    <span class="org-builtin">local</span> <span class="org-variable-name">expected</span>=<span class="org-string">"hacked by i4k"</span>
+    <span class="org-builtin">local</span> <span class="org-variable-name">cwd</span>=<span class="org-string">"$(</span><span class="org-sh-quoted-exec">pwd</span><span class="org-string">)"</span>
+
+    <span class="org-builtin">cd</span> <span class="org-string">"${mntp}"</span>
+    <span class="org-builtin">local</span> <span class="org-variable-name">result</span>=<span class="org-string">"$(</span><span class="org-sh-quoted-exec">cat</span><span class="org-string"> ctl)"</span>
+
+    <span class="org-keyword">if</span> [ <span class="org-string">"${expected}"</span> != <span class="org-string">"${result}"</span> ]; <span class="org-keyword">then</span>
+        <span class="org-builtin">echo</span> <span class="org-string">"Failed, received: ${result}"</span>
+    <span class="org-keyword">fi</span>
+
+}
+
+<span class="org-comment-delimiter"># </span><span class="org-comment">Running backend 9P file server</span>
+
+<span class="org-variable-name">MNTPOINT</span>=<span class="org-string">"/tmp/dchan"</span>
+
+setup <span class="org-string">"${MNTPOINT}"</span> <span class="org-string">"tcp!localhost!6666"</span> <span class="org-string">"$(</span><span class="org-sh-quoted-exec">pwd</span><span class="org-string">)/dchan -addr 'localhost:6666'"</span>
+
+<span class="org-variable-name">RES</span>=<span class="org-string">"`changedir \"${MNTPOINT}\"`"</span>
+<span class="org-keyword">if</span> [ -n <span class="org-string">"$RES"</span> ]; <span class="org-keyword">then</span>
+    <span class="org-builtin">echo</span> <span class="org-string">"Failed to change dir: $RES"</span>
+    teardown <span class="org-string">"${MNTPOINT}"</span> <span class="org-string">"${DAEMONPID}"</span>
+    <span class="org-keyword">exit</span> 1
+<span class="org-keyword">fi</span>
+
+<span class="org-variable-name">RES</span>=<span class="org-string">"`readctl \"${MNTPOINT}\"`"</span>
+<span class="org-keyword">if</span> [ -n <span class="org-string">"$RES"</span> ]; <span class="org-keyword">then</span>
+    <span class="org-builtin">echo</span> <span class="org-string">"Failed read ctl: $RES"</span>
+    teardown <span class="org-string">"${MNTPOINT}"</span> <span class="org-string">"${DAEMONPID}"</span>
+    <span class="org-keyword">exit</span> 1
+<span class="org-keyword">fi</span>
+
+teardown <span class="org-string">"${MNTPOINT}"</span> <span class="org-string">"${DAEMONPID}"</span>
+</pre>
+</div>
+</div>
+</li></ol>
+</li>
+
+<li><a id="sec-10-2-1-4" name="sec-10-2-1-4"></a>Dchan<br  /><div class="outline-text-5" id="text-10-2-1-4">
+<p>
+Dchan extends the go9p file server (<i>srv.File</i>) data structure,
+overriding the required methods for opening, reading, writing,
+etc, files. The core data structure is <i>File</i> and it can be
+seen below:
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-go" id="src-dchan-file-dat"><span class="org-keyword">type</span> <span class="org-type">File</span> <span class="org-keyword">struct</span> {
+        srv.File
+        aux Faux
+}
+</pre>
+</div>
+
+<p>
+<i>Faux</i> stores auxiliary data for each file.
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-go" id="src-dchan-faux-dat"><span class="org-keyword">type</span> <span class="org-type">Faux</span> <span class="org-keyword">struct</span> {
+        ftype uint8
+}
+</pre>
+</div>
+
+<p>
+<i>File</i> have methods to handle each file operation. For now, the
+<i>Read</i> method only have a fixed size string.
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-go" id="src-dchan-file-dat-read"><span class="org-keyword">func</span> (file *<span class="org-type">File</span>) <span class="org-function-name">Read</span>(fid *<span class="org-type">srv.FFid</span>, buf []<span class="org-type">byte</span>, offset <span class="org-type">uint64</span>) (<span class="org-type">int</span>, <span class="org-type">error</span>) {
+        b := []<span class="org-function-name">byte</span>(<span class="org-string">"hacked by i4k"</span>)
+        n := <span class="org-builtin">len</span>(b)
+
+        <span class="org-keyword">if</span> offset &gt;= <span class="org-function-name">uint64</span>(n) {
+                <span class="org-keyword">return</span> 0, <span class="org-constant">nil</span>
+        }
+
+        b = b[<span class="org-function-name">int</span>(offset):n]
+        n -= <span class="org-function-name">int</span>(offset)
+        <span class="org-keyword">if</span> <span class="org-builtin">len</span>(buf) &lt; n {
+                n = <span class="org-builtin">len</span>(buf)
+        }
+
+        <span class="org-builtin">copy</span>(buf[offset:<span class="org-function-name">int</span>(offset)+n], b[offset:])
+        <span class="org-keyword">return</span> n, <span class="org-constant">nil</span>
+}
+</pre>
+</div>
+
+<p>
+<i>Write</i>, <i>Stat</i> and <i>Wstat</i> aren&rsquo;t implemented yet:
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-go" id="src-dchan-file-dat-meth"><span class="org-keyword">func</span> (file *<span class="org-type">File</span>) <span class="org-function-name">Write</span>(fid *<span class="org-type">srv.FFid</span>, data []<span class="org-type">byte</span>, offset <span class="org-type">uint64</span>) (<span class="org-type">int</span>, <span class="org-type">error</span>) {
+        <span class="org-keyword">return</span> 0, errors.<span class="org-function-name">New</span>(<span class="org-string">"permission denied"</span>)
+}
+
+<span class="org-keyword">func</span> (file *<span class="org-type">File</span>) <span class="org-function-name">Wstat</span>(fid *<span class="org-type">srv.FFid</span>, dir *<span class="org-type">p.Dir</span>) <span class="org-type">error</span> {
+        <span class="org-keyword">return</span> <span class="org-constant">nil</span>
+}
+
+<span class="org-keyword">func</span> (file *<span class="org-type">File</span>) <span class="org-function-name">Remove</span>(fid *<span class="org-type">srv.FFid</span>) <span class="org-type">error</span> {
+        <span class="org-keyword">return</span> <span class="org-constant">nil</span>
+}
+</pre>
+</div>
+
+<div class="org-src-container">
+
+<pre class="src src-go" id="src-dchan-file.go"><span class="org-keyword">type</span> <span class="org-type">File</span> <span class="org-keyword">struct</span> {
+        srv.File
+        aux Faux
+}
+<span class="org-keyword">type</span> <span class="org-type">Faux</span> <span class="org-keyword">struct</span> {
+        ftype uint8
+}
+
+<span class="org-keyword">func</span> (file *<span class="org-type">File</span>) <span class="org-function-name">Read</span>(fid *<span class="org-type">srv.FFid</span>, buf []<span class="org-type">byte</span>, offset <span class="org-type">uint64</span>) (<span class="org-type">int</span>, <span class="org-type">error</span>) {
+        b := []<span class="org-function-name">byte</span>(<span class="org-string">"hacked by i4k"</span>)
+        n := <span class="org-builtin">len</span>(b)
+
+        <span class="org-keyword">if</span> offset &gt;= <span class="org-function-name">uint64</span>(n) {
+                <span class="org-keyword">return</span> 0, <span class="org-constant">nil</span>
+        }
+
+        b = b[<span class="org-function-name">int</span>(offset):n]
+        n -= <span class="org-function-name">int</span>(offset)
+        <span class="org-keyword">if</span> <span class="org-builtin">len</span>(buf) &lt; n {
+                n = <span class="org-builtin">len</span>(buf)
+        }
+
+        <span class="org-builtin">copy</span>(buf[offset:<span class="org-function-name">int</span>(offset)+n], b[offset:])
+        <span class="org-keyword">return</span> n, <span class="org-constant">nil</span>
+}
+<span class="org-keyword">func</span> (file *<span class="org-type">File</span>) <span class="org-function-name">Write</span>(fid *<span class="org-type">srv.FFid</span>, data []<span class="org-type">byte</span>, offset <span class="org-type">uint64</span>) (<span class="org-type">int</span>, <span class="org-type">error</span>) {
+        <span class="org-keyword">return</span> 0, errors.<span class="org-function-name">New</span>(<span class="org-string">"permission denied"</span>)
+}
+
+<span class="org-keyword">func</span> (file *<span class="org-type">File</span>) <span class="org-function-name">Wstat</span>(fid *<span class="org-type">srv.FFid</span>, dir *<span class="org-type">p.Dir</span>) <span class="org-type">error</span> {
+        <span class="org-keyword">return</span> <span class="org-constant">nil</span>
+}
+
+<span class="org-keyword">func</span> (file *<span class="org-type">File</span>) <span class="org-function-name">Remove</span>(fid *<span class="org-type">srv.FFid</span>) <span class="org-type">error</span> {
+        <span class="org-keyword">return</span> <span class="org-constant">nil</span>
+}
+</pre>
+</div>
+
+<p>
+Main is the module responsible to parse the command-line arguments and
+initialize the 9P file server.
+</p>
+
+<p>
+Dchan arguments are listed below:
+</p>
+
+<!-- This HTML table template is generated by emacs 24.4.1 -->
+<table border="1">
+  <tr>
+    <td align="left" valign="top">
+      &nbsp;argument&nbsp;
+    </td>
+    <td align="left" valign="top">
+      &nbsp;default&nbsp;value&nbsp;
+    </td>
+    <td align="left" valign="top">
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;description&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    </td>
+  </tr>
+  <tr>
+    <td align="left" valign="top">
+      &nbsp;&nbsp;addr&nbsp;&nbsp;&nbsp;&nbsp;
+    </td>
+    <td align="left" valign="top">
+      &nbsp;&nbsp;&nbsp;&nbsp;:6666&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    </td>
+    <td align="left" valign="top">
+      &nbsp;network&nbsp;listen&nbsp;address&nbsp;
+    </td>
+  </tr>
+  <tr>
+    <td align="left" valign="top">
+      &nbsp;&nbsp;debug&nbsp;&nbsp;&nbsp;
+    </td>
+    <td align="left" valign="top">
+      &nbsp;&nbsp;&nbsp;&nbsp;not&nbsp;set&nbsp;&nbsp;&nbsp;&nbsp;
+    </td>
+    <td align="left" valign="top">
+      &nbsp;&nbsp;&nbsp;&nbsp;Enable&nbsp;debugging&nbsp;&nbsp;&nbsp;&nbsp;
+    </td>
+  </tr>
+</table>
+
+<p>
+Command-line arguments are defined below:
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-go" id="src-dchan-cmdargs"><span class="org-keyword">var</span> addr = flag.<span class="org-function-name">String</span>(<span class="org-string">"addr"</span>, <span class="org-string">":6666"</span>, <span class="org-string">"network address"</span>)
+<span class="org-keyword">var</span> debug = flag.<span class="org-function-name">Bool</span>(<span class="org-string">"d"</span>, <span class="org-constant">false</span>, <span class="org-string">"print debug messages"</span>)
+</pre>
+</div>
+
+<p>
+The function main initialize a file server (<i>srv.Fsrv</i> and add the
+<i>ctl</i> file to root of the filesystem (/). The root have permission
+bits 0777 until we have a good understanding of the way services
+will communicate. The Dotu attribute of file server indicates that
+server is (or not) compatible with 9P2000.u specification. The
+9P2000.u have some extensions for unix, and it is recommended for
+unix file servers (our case).
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-go" id="src-dchan-main"><span class="org-keyword">var</span> root *srv.File
+
+<span class="org-keyword">func</span> <span class="org-function-name">main</span>() {
+        <span class="org-keyword">var</span> err error
+        <span class="org-keyword">var</span> ctl *File
+        <span class="org-keyword">var</span> s *srv.Fsrv
+
+        flag.<span class="org-function-name">Parse</span>()
+        user := p.OsUsers.<span class="org-function-name">Uid2User</span>(os.<span class="org-function-name">Geteuid</span>())
+        root = <span class="org-builtin">new</span>(<span class="org-type">srv.File</span>)
+        err = root.<span class="org-function-name">Add</span>(<span class="org-constant">nil</span>, <span class="org-string">"/"</span>, user, <span class="org-constant">nil</span>, p.DMDIR|0777, <span class="org-constant">nil</span>)
+        <span class="org-keyword">if</span> err != <span class="org-constant">nil</span> {
+                <span class="org-keyword">goto</span> <span class="org-constant">error</span>
+        }
+
+        ctl = <span class="org-builtin">new</span>(<span class="org-type">File</span>)
+        err = ctl.<span class="org-function-name">Add</span>(root, <span class="org-string">"ctl"</span>, p.OsUsers.<span class="org-function-name">Uid2User</span>(os.<span class="org-function-name">Geteuid</span>()), <span class="org-constant">nil</span>, 0444, ctl)
+        <span class="org-keyword">if</span> err != <span class="org-constant">nil</span> {
+                <span class="org-keyword">goto</span> <span class="org-constant">error</span>
+        }
+
+        s = srv.<span class="org-function-name">NewFileSrv</span>(root)
+        s.Dotu = <span class="org-constant">true</span>
+
+        <span class="org-keyword">if</span> *debug {
+                s.Debuglevel = 1
+        }
+
+        s.<span class="org-function-name">Start</span>(s)
+        err = s.<span class="org-function-name">StartNetListener</span>(<span class="org-string">"tcp"</span>, *addr)
+        <span class="org-keyword">if</span> err != <span class="org-constant">nil</span> {
+                <span class="org-keyword">goto</span> <span class="org-constant">error</span>
+        }
+        <span class="org-keyword">return</span>
+
+<span class="org-constant">error</span>:
+        log.<span class="org-function-name">Println</span>(fmt.<span class="org-function-name">Sprintf</span>(<span class="org-string">"Error: %s"</span>, err))
+}
+</pre>
+</div>
+</div>
+</li></ol>
+</div>
+</div>
+
+<div id="outline-container-sec-10-3" class="outline-3">
+<h3 id="sec-10-3"><span class="section-number-3">10.3</span> Test cases</h3>
+<div class="outline-text-3" id="text-10-3">
+</div><div id="outline-container-sec-10-3-1" class="outline-4">
+<h4 id="sec-10-3-1"><span class="section-number-4">10.3.1</span> Network partitions</h4>
+<div class="outline-text-4" id="text-10-3-1">
+<p>
+Network partition is the most frequent problem that can affect
+Dchan. There&rsquo;s some cases that needs to be covered in order to achieve
+reliability in the exchange of messages.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-10-4" class="outline-3">
+<h3 id="sec-10-4"><span class="section-number-3">10.4</span> dchan-proxy</h3>
+<div class="outline-text-3" id="text-10-4">
+</div><div id="outline-container-sec-10-4-1" class="outline-4">
+<h4 id="sec-10-4-1"><span class="section-number-4">10.4.1</span> Makefile</h4>
+<div class="outline-text-4" id="text-10-4-1">
+<div class="org-src-container">
+
+<pre class="src src-makefile"><span class="org-makefile-targets">all</span>: clean tangle build test
+
+<span class="org-makefile-targets">tangle</span>:
+        org-tangle proxy.org
+
+<span class="org-makefile-targets">build</span>: tangle
+        go build -v
+
+<span class="org-makefile-targets">test</span>: tangle build
+        bash ../testing/testcover.sh
+        chmod +x tests/acceptance/*.sh
+        ./tests/acceptance/vfs.sh
+
+<span class="org-makefile-targets">clean</span>:
+        rm -f tests/acceptance/*.sh
+        rm -f *.go
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-10-4-2" class="outline-4">
+<h4 id="sec-10-4-2"><span class="section-number-4">10.4.2</span> Proxy acceptance tests</h4>
+<div class="outline-text-4" id="text-10-4-2">
+<p>
+The most important acceptance tests for the proxy server are:
+</p>
+
+<ul class="org-ul">
+<li>File system interface;
+</li>
+<li>Network partitions with dchan server;
+</li>
+</ul>
+
+<p>
+Below are the VFS tests:
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-sh"><span class="org-builtin">.</span> ../testing/helpers.sh
+
+<span class="org-variable-name">BACKENDPID</span>=<span class="org-string">""</span>
+
+<span class="org-keyword">function</span> <span class="org-function-name">start9pserver</span> {
+    <span class="org-builtin">local</span> <span class="org-variable-name">cwd</span>=<span class="org-string">"$(</span><span class="org-sh-quoted-exec">pwd</span><span class="org-string">)"</span>
+
+    go get -v -u github.com/lionkov/go9p
+    <span class="org-builtin">cd</span> ${<span class="org-variable-name">GOPATH</span>}/src/github.com/lionkov/go9p/p/srv/examples/clonefs/
+    go build -v
+    ./clonefs -addr <span class="org-string">":6666"</span> -d &amp;
+
+    <span class="org-variable-name">BACKENDPID</span>=$<span class="org-variable-name">!</span>
+
+    <span class="org-builtin">cd</span> <span class="org-string">"${cwd}"</span>
+}
+
+<span class="org-keyword">function</span> <span class="org-function-name">changedir</span> {
+    <span class="org-builtin">local</span> <span class="org-variable-name">targetdir</span>=<span class="org-string">"$1"</span>
+
+    <span class="org-builtin">cd</span> <span class="org-string">"${targetdir}"</span>
+
+    <span class="org-keyword">if</span> [ <span class="org-string">"$?"</span> != <span class="org-string">"0"</span> ]; <span class="org-keyword">then</span>
+        <span class="org-builtin">echo</span> <span class="org-string">"Failed to change dir"</span>
+        <span class="org-keyword">exit</span> 1
+    <span class="org-keyword">fi</span>
+}
+
+<span class="org-comment-delimiter"># </span><span class="org-comment">Running backend 9P file server</span>
+
+start9pserver
+
+rm -f /tmp/dchan-proxy.sock
+setup <span class="org-string">"/tmp/dchan-proxy"</span> <span class="org-string">"unix!/tmp/dchan-proxy.sock"</span> <span class="org-string">"$(</span><span class="org-sh-quoted-exec">pwd</span><span class="org-string">)/proxy -laddr unix:///tmp/dchan-proxy.sock -raddr 'localhost:6666'"</span>
+
+changedir <span class="org-string">"/tmp/dchan-proxy"</span>
+
+teardown <span class="org-string">"/tmp/dchan-proxy"</span> <span class="org-string">"${DAEMONPID}"</span>
+
+<span class="org-builtin">kill</span> ${<span class="org-variable-name">BACKENDPID</span>}
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-10-4-3" class="outline-4">
+<h4 id="sec-10-4-3"><span class="section-number-4">10.4.3</span> Proxy implementation</h4>
+<div class="outline-text-4" id="text-10-4-3">
+<p>
+Dchan-proxy is a pure TCP proxy that knows nothing about 9P or
+dchan internal working. It only bypass local network packets (from
+unix socket or loopback tcp port) to remote destination server. The
+difference is that it never fail to clients. If the backend server
+crash or network link is down, it will not return any bytes to
+client until it successfully reconnects with backend server.
+</p>
+
+<p>
+The Go implementation of the proxy has heavy use of CSP channels to
+pipe data from one connection to the other, not interested in the
+content.
+</p>
+
+<p>
+The algorithm for this pipe is based on the following ideas:
+</p>
+
+<ol class="org-ol">
+<li>For the listener connection <i>lConn</i>, create a channel <i>lChan</i> and
+a go-routine reading bytes from <i>lConn</i> and writing into
+<i>lChan</i>.
+</li>
+
+<li>For the remote connection <i>rConn</i>, create a channel <i>rChan</i> and
+a go-routine reading bytes from <i>rConn</i> and writing into <i>rChan</i>.
+</li>
+
+<li>The piping process is an infinite loop with a non-deterministic
+choice (select) operation writing everything read from <i>lChan</i>
+into <i>rConn</i> and everything read from <i>rChan</i> into <i>lConn</i>.
+</li>
+</ol>
+
+
+<p>
+The first two steps are achieved by <i>chanFromConn</i> function.
+</p>
+
+<p>
+ChanFromConn creates a channel <i>c</i> and sends everything it reads from the socket
+connection <i>conn</i> into <i>c</i>. It makes by creating a new go-routine
+for reading data on the connection and copying it to destination
+channel. Data is copied to avoid races with channel&rsquo;s consumer.
+</p>
+
+<p>
+If something bad occurs reading <i>conn</i>, then the channel <i>c</i> is
+closed to notify the consumer that <i>conn</i> is down, requiring a
+re-connect.
+</p>
+
+<p>
+It returns a receive-only (unidirectional) channel containing data
+read from connection.
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-go" id="src-proxy-core-fn-chanfromconn"><span class="org-keyword">func</span> <span class="org-function-name">chanFromConn</span>(conn <span class="org-type">net.Conn</span>) &lt;-<span class="org-keyword">chan</span> []<span class="org-type">byte</span> {
+        c := <span class="org-builtin">make</span>(<span class="org-keyword">chan</span> []<span class="org-type">byte</span>)
+
+        <span class="org-keyword">go</span> <span class="org-keyword">func</span>() {
+                b := <span class="org-builtin">make</span>([]<span class="org-type">byte</span>, 1024)
+
+                <span class="org-keyword">for</span> {
+                        n, err := conn.<span class="org-function-name">Read</span>(b)
+
+                        <span class="org-keyword">if</span> n &gt; 0 {
+                                res := <span class="org-builtin">make</span>([]<span class="org-type">byte</span>, n)
+                                <span class="org-builtin">copy</span>(res, b[:n])
+                                c &lt;- res
+                        }
+
+                        <span class="org-keyword">if</span> err != <span class="org-constant">nil</span> {
+                                <span class="org-keyword">if</span> err == io.EOF {
+                                        <span class="org-comment-delimiter">// </span><span class="org-comment">connection was closed</span>
+                                        <span class="org-builtin">close</span>(c)
+                                } <span class="org-keyword">else</span> {
+                                        c &lt;- <span class="org-constant">nil</span>
+                                        <span class="org-builtin">close</span>(c)
+                                }
+
+                                <span class="org-keyword">break</span>
+                        }
+                }
+        }()
+
+        <span class="org-keyword">return</span> c
+}
+</pre>
+</div>
+
+<p>
+ChanFromConn unit tests can be seen <a href="#sec-10-4-4-1">here</a>.
+</p>
+
+<p>
+The third step is handled by <i>Pipe</i> function.
+</p>
+
+<p>
+Pipe creates a full-duplex pipe between the two sockets <i>lConn</i>
+and <i>rConn</i>, and transfers data from one to the other (see
+<a href="#sec-5-0-4">Non-deterministic choice</a>).
+</p>
+
+<p>
+Pipe uses the following convention to simplify the implementation:
+</p>
+
+<p>
+If a nil is received on <i>lChan</i> and channel is closed, then this
+means that client disconnects.  If a nil is received on <i>lChan</i>
+but channel is still active, then some error happened in the
+connection.
+</p>
+
+<p>
+The same for the remote one: If a nil is received on <i>rChan</i> and
+channel is closed, then this means that remote backend closed the
+connection. If a nil is received but the channel is still active,
+then some network error occurred.
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-go" id="src-proxy-core-fn-pipe"><span class="org-keyword">func</span> <span class="org-function-name">Pipe</span>(lConn <span class="org-type">net.Conn</span>, rConn <span class="org-type">net.Conn</span>) (<span class="org-type">error</span>, <span class="org-type">error</span>)  {
+        lChan := <span class="org-function-name">chanFromConn</span>(lConn)
+        rChan := <span class="org-function-name">chanFromConn</span>(rConn)
+
+        <span class="org-keyword">for</span> {
+                <span class="org-keyword">select</span> {
+                <span class="org-keyword">case</span> b1, ok1 := &lt;-lChan:
+                        <span class="org-keyword">if</span> b1 == <span class="org-constant">nil</span> &amp;&amp; ok1 == <span class="org-constant">true</span> {
+                                <span class="org-keyword">return</span> errors.<span class="org-function-name">New</span>(<span class="org-string">"Local connection error"</span>), <span class="org-constant">nil</span>
+                        } <span class="org-keyword">else</span> <span class="org-keyword">if</span> b1 == <span class="org-constant">nil</span> &amp;&amp; ok1 == <span class="org-constant">false</span> {
+                                <span class="org-comment-delimiter">// </span><span class="org-comment">connection succesfully closed</span>
+                                <span class="org-keyword">return</span> <span class="org-constant">nil</span>, <span class="org-constant">nil</span>
+                        } <span class="org-keyword">else</span> {
+                                rConn.<span class="org-function-name">Write</span>(b1)
+                        }
+                <span class="org-keyword">case</span> b2, ok2 := &lt;-rChan:
+                        <span class="org-keyword">if</span> b2 == <span class="org-constant">nil</span> &amp;&amp; ok2 == <span class="org-constant">true</span> {
+                                <span class="org-keyword">return</span> <span class="org-constant">nil</span>, errors.<span class="org-function-name">New</span>(<span class="org-string">"connection error"</span>)
+                        } <span class="org-keyword">else</span> <span class="org-keyword">if</span> b2 == <span class="org-constant">nil</span> &amp;&amp; ok2 == <span class="org-constant">false</span> {
+                                <span class="org-keyword">return</span> <span class="org-constant">nil</span>, <span class="org-constant">nil</span>
+                        } <span class="org-keyword">else</span> {
+                                lConn.<span class="org-function-name">Write</span>(b2)
+                        }
+                }
+        }
+
+        <span class="org-builtin">panic</span>(<span class="org-string">"unreachable"</span>)
+}
+</pre>
+</div>
+
+<p>
+Pipe unit tests can be seen <a href="#sec-10-4-4-2">here</a>.
+</p>
+</div>
+
+<ol class="org-ol"><li><a id="sec-10-4-3-1" name="sec-10-4-3-1"></a>Main<br  /><div class="outline-text-5" id="text-10-4-3-1">
+<p>
+Dchan-proxy receives only two command-line parameters:
+</p>
+
+<ul class="org-ul">
+<li>laddr: URI to listen on
+</li>
+<li>raddr: URI to TCP remote address
+</li>
+</ul>
+
+<p>
+By default it binds to unix socket on file /tmp/dchan-proxy.sock.
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-go" id="src-dchan-proxy-flags"><span class="org-keyword">var</span> (
+        laddr *string = flag.<span class="org-function-name">String</span>(<span class="org-string">"laddr"</span>, <span class="org-string">"unix:///tmp/dchan-proxy.sock"</span>, <span class="org-string">"local address"</span>)
+        raddr *string = flag.<span class="org-function-name">String</span>(<span class="org-string">"raddr"</span>, <span class="org-string">""</span>, <span class="org-string">"remote address"</span>)
+)
+</pre>
+</div>
+
+<p>
+The main function only parses the command line arguments and calls core.Start.
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-go"><span class="org-keyword">package</span> main
+
+<span class="org-keyword">import</span> (
+        <span class="org-string">"os"</span>
+        <span class="org-string">"fmt"</span>
+        <span class="org-string">"flag"</span>
+        <span class="org-string">"github.com/NeowayLabs/dchan/unix/proxy/core"</span>
+)
+
+<span class="org-keyword">var</span> (
+        laddr *string = flag.<span class="org-function-name">String</span>(<span class="org-string">"laddr"</span>, <span class="org-string">"unix:///tmp/dchan-proxy.sock"</span>, <span class="org-string">"local address"</span>)
+        raddr *string = flag.<span class="org-function-name">String</span>(<span class="org-string">"raddr"</span>, <span class="org-string">""</span>, <span class="org-string">"remote address"</span>)
+)
+
+<span class="org-keyword">func</span> <span class="org-function-name">main</span>() {
+        <span class="org-keyword">var</span> err error
+
+        flag.<span class="org-function-name">Parse</span>()
+
+        <span class="org-keyword">if</span> *raddr == <span class="org-string">""</span> {
+                fmt.<span class="org-function-name">Printf</span>(<span class="org-string">"-raddr is required.\n"</span>)
+                os.<span class="org-function-name">Exit</span>(1)
+        }
+
+        err = core.<span class="org-function-name">Start</span>(*laddr, *raddr)
+
+        <span class="org-keyword">if</span> err != <span class="org-constant">nil</span> {
+                <span class="org-builtin">panic</span>(err)
+        }
+}
+</pre>
+</div>
+</div>
+</li>
+
+<li><a id="sec-10-4-3-2" name="sec-10-4-3-2"></a>Core package<br  /><div class="outline-text-5" id="text-10-4-3-2">
+<p>
+The core package is responsible for the magic. It starts the
+socket server and the go-routines to handle the requests.
+</p>
+
+<p>
+Start function first discover the type of socket for the local server to
+use the generic net.Listen function. Then it starts listening on
+configured local address for incoming connections.
+</p>
+
+<p>
+For every new connection, it calls handleProxy in a new
+go-routine. A new go-routine for each connection is required
+because 9P is a stateful protocol, this means the network
+connection will stay established until client disconnects (unmount
+the file system). We can limit the max number of clients in the
+future.
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-go" id="src-proxy-core-fn-start"><span class="org-keyword">func</span> <span class="org-function-name">Start</span>(laddr, raddr <span class="org-type">string</span>) <span class="org-type">error</span> {
+        <span class="org-keyword">var</span> (
+                nettype, addrval string
+                err error
+        )
+
+        <span class="org-keyword">if</span> laddr[0:7] == <span class="org-string">"unix://"</span> {
+                nettype = <span class="org-string">"unix"</span>
+                addrval = laddr[7:]
+        } <span class="org-keyword">else</span> <span class="org-keyword">if</span> laddr[0:6] == <span class="org-string">"tcp://"</span> {
+                nettype = <span class="org-string">"tcp"</span>
+                addrval = laddr[6:]
+        } <span class="org-keyword">else</span> {
+                nettype = <span class="org-string">"tcp"</span>
+                addrval = laddr
+        }
+
+        listener, err := net.<span class="org-function-name">Listen</span>(nettype, addrval)
+
+        <span class="org-keyword">if</span> err != <span class="org-constant">nil</span> {
+                <span class="org-builtin">panic</span>(err)
+        }
+
+        <span class="org-keyword">for</span> {
+                conn, err := listener.<span class="org-function-name">Accept</span>()
+
+                <span class="org-keyword">if</span> err != <span class="org-constant">nil</span> {
+                        <span class="org-builtin">panic</span>(err)
+                }
+
+                <span class="org-keyword">go</span> <span class="org-function-name">handleProxy</span>(conn, raddr)
+        }
+}
+</pre>
+</div>
+
+<p>
+HandleProxy establish a new connection with the backend 9P server
+and starts piping data from remote socket to the local one using
+the Pipe function. When there&rsquo;s no more data to read or write to
+remote destination, handleProxy close both connections.
+</p>
+
+<p>
+The Pipe is based on the blog post below:
+</p>
+
+<p>
+<a href="https://www.stavros.io/posts/proxying-two-connections-go/">https://www.stavros.io/posts/proxying-two-connections-go/</a>
+</p>
+
+<p>
+It was not possible to use plain io.Copy because we have
+requirements about network failures.
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-go" id="src-proxy-core-fn-handleProxy"><span class="org-keyword">func</span> <span class="org-function-name">handleProxy</span>(conn <span class="org-type">net.Conn</span>, raddr <span class="org-type">string</span>) {
+        addr, err := net.<span class="org-function-name">ResolveTCPAddr</span>(<span class="org-string">"tcp"</span>, raddr)
+        <span class="org-keyword">if</span> err != <span class="org-constant">nil</span> {
+                <span class="org-builtin">panic</span>(err)
+        }
+
+        rConn, err := net.<span class="org-function-name">DialTCP</span>(<span class="org-string">"tcp"</span>, <span class="org-constant">nil</span>, addr)
+
+        <span class="org-keyword">if</span> err != <span class="org-constant">nil</span> {
+                <span class="org-builtin">panic</span>(err)
+        }
+
+        <span class="org-keyword">defer</span> <span class="org-keyword">func</span>() {
+                rConn.<span class="org-function-name">Close</span>()
+                conn.<span class="org-function-name">Close</span>()
+        }()
+
+        <span class="org-function-name">Pipe</span>(conn, rConn)
+}
+</pre>
+</div>
+</div>
+</li></ol>
+</div>
+
+<div id="outline-container-sec-10-4-4" class="outline-4">
+<h4 id="sec-10-4-4"><span class="section-number-4">10.4.4</span> Core unit tests</h4>
+<div class="outline-text-4" id="text-10-4-4">
+<p>
+Proxy test coverage can be seen <a href="http://neowaylabs.github.io/dchan/proxy_cover.html">here</a>.
+</p>
+</div>
+
+<ol class="org-ol"><li><a id="sec-10-4-4-1" name="sec-10-4-4-1"></a>ChanFromConn testcases<br  /><div class="outline-text-5" id="text-10-4-4-1">
+<p>
+To Easy the testing, we&rsquo;ll create our own net.Conn implementation
+that only writes and read in a internal buffer.
+</p>
+
+<p>
+The <i>MyConn</i> have a <i>mutex</i> to synchronize reads and writes into
+<i>buffer</i> and a <i>counter</i> integer property to trigger a connection
+error when 5 (five) or more reads occurs. The newMockCon returns a
+new fresh connection.
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-go" id="src-proxy-core-tests-myconn-new"><span class="org-keyword">type</span> <span class="org-type">MyConn</span> <span class="org-keyword">struct</span> {
+        buffer []<span class="org-type">byte</span>
+        *sync.Mutex
+
+        counter int
+        closed bool
+}
+
+<span class="org-keyword">func</span> <span class="org-function-name">newMockConn</span>() <span class="org-type">net.Conn</span> {
+        c := &amp;<span class="org-type">MyConn</span>{}
+        c.buffer = <span class="org-builtin">make</span>([]<span class="org-type">byte</span>, 0, 1024)
+        c.Mutex = &amp;sync.<span class="org-type">Mutex</span>{}
+        <span class="org-keyword">return</span> c
+}
+</pre>
+</div>
+
+<p>
+Write and Read simply operate on internal byte array
+<i>buffer</i>. Both functions lock to avoid races.
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-go" id="src-proxy-core-tests-myconn-impl"><span class="org-keyword">func</span> (c *<span class="org-type">MyConn</span>) <span class="org-function-name">Write</span>(d []<span class="org-type">byte</span>) (<span class="org-type">int</span>, <span class="org-type">error</span>) {
+        c.<span class="org-function-name">Lock</span>()
+        <span class="org-keyword">defer</span> c.<span class="org-function-name">Unlock</span>()
+
+        <span class="org-keyword">if</span> c.closed {
+                <span class="org-keyword">return</span> 0, errors.<span class="org-function-name">New</span>(<span class="org-string">"Connection closed"</span>)
+        }
+
+        <span class="org-keyword">for</span> _, b := <span class="org-keyword">range</span> d {
+                c.buffer = <span class="org-builtin">append</span>(c.buffer, b)
+        }
+
+        <span class="org-keyword">return</span> <span class="org-builtin">len</span>(d), <span class="org-constant">nil</span>
+}
+
+<span class="org-keyword">func</span> (c *<span class="org-type">MyConn</span>) <span class="org-function-name">Read</span>(d []<span class="org-type">byte</span>) (<span class="org-type">int</span>, <span class="org-type">error</span>) {
+        <span class="org-keyword">var</span> i int
+
+<span class="org-constant">readAgain</span>:
+        c.<span class="org-function-name">Lock</span>()
+
+        <span class="org-keyword">if</span> c.closed {
+                <span class="org-keyword">return</span> 0, io.EOF
+        }
+
+        <span class="org-keyword">if</span> c.counter &gt;= 5 {
+                c.<span class="org-function-name">Unlock</span>()
+                <span class="org-keyword">return</span> 0, errors.<span class="org-function-name">New</span>(<span class="org-string">"Connection error"</span>)
+        }
+
+        <span class="org-keyword">if</span> <span class="org-builtin">len</span>(c.buffer) == 0 {
+                c.<span class="org-function-name">Unlock</span>()
+                time.<span class="org-function-name">Sleep</span>(100 * time.Millisecond)
+                <span class="org-keyword">goto</span> <span class="org-constant">readAgain</span>
+        }
+
+        <span class="org-keyword">for</span> i = 0; i &lt; <span class="org-builtin">cap</span>(d) &amp;&amp; i &lt; <span class="org-builtin">len</span>(c.buffer); i++ {
+                d[i] = c.buffer[i]
+        }
+
+        c.buffer = c.buffer[i:]
+        c.counter += 1
+
+        c.<span class="org-function-name">Unlock</span>()
+
+        <span class="org-keyword">return</span> i, <span class="org-constant">nil</span>
+}
+
+<span class="org-keyword">func</span> (c *<span class="org-type">MyConn</span>) <span class="org-function-name">Close</span>() <span class="org-type">error</span> {
+        c.<span class="org-function-name">Lock</span>()
+        <span class="org-keyword">defer</span> c.<span class="org-function-name">Unlock</span>()
+
+        c.buffer = <span class="org-constant">nil</span>
+        c.closed = <span class="org-constant">true</span>
+        <span class="org-keyword">return</span> <span class="org-constant">nil</span>
+}
+
+<span class="org-keyword">func</span> (c *<span class="org-type">MyConn</span>) <span class="org-function-name">LocalAddr</span>() <span class="org-type">net.Addr</span> { <span class="org-keyword">return</span> <span class="org-constant">nil</span> }
+<span class="org-keyword">func</span> (c *<span class="org-type">MyConn</span>) <span class="org-function-name">RemoteAddr</span>() <span class="org-type">net.Addr</span> { <span class="org-keyword">return</span> <span class="org-constant">nil</span> }
+<span class="org-keyword">func</span> (c *<span class="org-type">MyConn</span>) <span class="org-function-name">SetDeadline</span>(t <span class="org-type">time.Time</span>) <span class="org-type">error</span> { <span class="org-keyword">return</span> <span class="org-constant">nil</span> }
+<span class="org-keyword">func</span> (c *<span class="org-type">MyConn</span>) <span class="org-function-name">SetReadDeadline</span>(t <span class="org-type">time.Time</span>) <span class="org-type">error</span> { <span class="org-keyword">return</span> <span class="org-constant">nil</span> }
+<span class="org-keyword">func</span> (c *<span class="org-type">MyConn</span>) <span class="org-function-name">SetWriteDeadline</span>(t <span class="org-type">time.Time</span>) <span class="org-type">error</span> { <span class="org-keyword">return</span> <span class="org-constant">nil</span> }
+</pre>
+</div>
+
+<p>
+ChanFromConn must be tested for the following cases:
+</p>
+
+<ol class="org-ol">
+<li>Every data written into the connection must be written into the
+channel;
+</li>
+<li>If the Read from the connection fails, the channel must be
+closed;
+</li>
+</ol>
+
+
+<p>
+For the first case, we can test writing something into the
+connection and verifying if it was written into the channel.
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-go" id="src-proxy-core-tests-1"><span class="org-keyword">func</span> <span class="org-function-name">TestChanFromConn1</span>(t *<span class="org-type">testing.T</span>) {
+        conn := <span class="org-function-name">newMockConn</span>()
+        chan1 := <span class="org-function-name">chanFromConn</span>(conn)
+
+        conn.<span class="org-function-name">Write</span>([]<span class="org-function-name">byte</span>(<span class="org-string">"teste"</span>))
+
+        timeout := time.<span class="org-function-name">After</span>(1 * time.Second)
+
+        <span class="org-keyword">select</span> {
+        <span class="org-keyword">case</span> d := &lt;-chan1:
+                <span class="org-keyword">if</span> <span class="org-function-name">string</span>(d) != <span class="org-string">"teste"</span> {
+                        t.<span class="org-function-name">Errorf</span>(<span class="org-string">"Expected '%s' != from '%s'."</span>,
+                                <span class="org-string">"teste"</span>, <span class="org-function-name">string</span>(d))
+                }
+        <span class="org-keyword">case</span> &lt;-timeout:
+                t.<span class="org-function-name">Error</span>(<span class="org-string">"No data available in 1 second"</span>)
+        }
+
+        conn.<span class="org-function-name">Write</span>([]<span class="org-function-name">byte</span>(<span class="org-string">"i4k"</span>))
+
+        timeout = time.<span class="org-function-name">After</span>(1 * time.Second)
+
+        <span class="org-keyword">select</span> {
+        <span class="org-keyword">case</span> d := &lt;-chan1:
+                <span class="org-keyword">if</span> <span class="org-function-name">string</span>(d) != <span class="org-string">"i4k"</span> {
+                        t.<span class="org-function-name">Errorf</span>(<span class="org-string">"Expected '%s' != from '%s'."</span>,
+                                <span class="org-string">"i4k"</span>, <span class="org-function-name">string</span>(d))
+                }
+        <span class="org-keyword">case</span> &lt;-timeout:
+                t.<span class="org-function-name">Error</span>(<span class="org-string">"No data available in 1 second"</span>)
+        }
+}
+</pre>
+</div>
+
+<p>
+For the second case, we&rsquo;ll write 5 times into the connection to
+trigger an error in the Read method of <i>MyConn</i>.
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-go" id="src-proxy-core-tests-2"><span class="org-keyword">func</span> <span class="org-function-name">TestChanfromconn2</span>(t *<span class="org-type">testing.T</span>) {
+        conn := <span class="org-function-name">newMockConn</span>()
+        chan1 := <span class="org-function-name">chanFromConn</span>(conn)
+
+        conn.<span class="org-function-name">Write</span>([]<span class="org-function-name">byte</span>(<span class="org-string">"you"</span>))
+        &lt;-chan1
+        conn.<span class="org-function-name">Write</span>([]<span class="org-function-name">byte</span>(<span class="org-string">"have"</span>))
+        &lt;-chan1
+        conn.<span class="org-function-name">Write</span>([]<span class="org-function-name">byte</span>(<span class="org-string">"been"</span>))
+        &lt;-chan1
+        conn.<span class="org-function-name">Write</span>([]<span class="org-function-name">byte</span>(<span class="org-string">"hacked"</span>))
+        &lt;-chan1
+        conn.<span class="org-function-name">Write</span>([]<span class="org-function-name">byte</span>(<span class="org-string">"!!!"</span>))
+        &lt;-chan1
+
+        <span class="org-comment-delimiter">// </span><span class="org-comment">The next read will trigger a connection error</span>
+        v, ok := &lt;-chan1
+
+        <span class="org-keyword">if</span> v == <span class="org-constant">nil</span> &amp;&amp; ok == <span class="org-constant">false</span> {
+                t.<span class="org-function-name">Errorf</span>(<span class="org-string">"The channel must be open... Returned %v :: %v"</span>, <span class="org-function-name">string</span>(v), ok)
+        }
+}
+</pre>
+</div>
+</div>
+</li>
+
+<li><a id="sec-10-4-4-2" name="sec-10-4-4-2"></a>Pipe testcases<br  /><div class="outline-text-5" id="text-10-4-4-2">
+<p>
+The Pipe function have the following test cases:
+</p>
+
+<ol class="org-ol">
+<li>Every byte written on one channel must be written on the other;
+</li>
+<li>If reading some of the channels receive nil, but the channel is
+closed, then Pipe must return successfully;
+</li>
+<li>If reading some of the channels receive nil but channel is
+active, then must return an error;
+</li>
+</ol>
+
+<div class="org-src-container">
+
+<pre class="src src-go" id="src-proxy-core-tests-pipe-1"><span class="org-keyword">func</span> <span class="org-function-name">TestPipe1</span>(t *<span class="org-type">testing.T</span>) {
+        lConn := <span class="org-function-name">newMockConn</span>()
+        rConn := <span class="org-function-name">newMockConn</span>()
+
+        <span class="org-keyword">go</span> <span class="org-keyword">func</span>() {
+                err1, err2 := <span class="org-function-name">Pipe</span>(lConn, rConn)
+
+                <span class="org-keyword">if</span> err1 != <span class="org-constant">nil</span> {
+                        t.<span class="org-function-name">Errorf</span>(<span class="org-string">"Conn1 failed: %s"</span>, err1.<span class="org-function-name">Error</span>())
+                }
+
+                <span class="org-keyword">if</span> err2 != <span class="org-constant">nil</span> {
+                        t.<span class="org-function-name">Errorf</span>(<span class="org-string">"Conn2 failed: %s"</span>, err2.<span class="org-function-name">Error</span>())
+                }
+        }()
+
+        lConn.<span class="org-function-name">Write</span>([]<span class="org-function-name">byte</span>(<span class="org-string">"teste"</span>))
+
+        data := <span class="org-builtin">make</span>([]<span class="org-type">byte</span>, 5)
+
+        n, err := rConn.<span class="org-function-name">Read</span>(data)
+
+        <span class="org-keyword">if</span> err != <span class="org-constant">nil</span> {
+                t.<span class="org-function-name">Error</span>(err)
+                <span class="org-keyword">return</span>
+        }
+
+        <span class="org-keyword">if</span> n != 5 {
+                t.<span class="org-function-name">Errorf</span>(<span class="org-string">"Expected 5 bytes, received %d"</span>, n)
+                <span class="org-keyword">return</span>
+        }
+
+        <span class="org-keyword">if</span> <span class="org-function-name">string</span>(data) != <span class="org-string">"teste"</span> {
+                t.<span class="org-function-name">Errorf</span>(<span class="org-string">"Expected '%s' but received '%s'"</span>,
+                        <span class="org-string">"teste"</span>, <span class="org-function-name">string</span>(data))
+        }
+}
+</pre>
+</div>
+
+<p>
+Closing the local connection must make Pipe return successfully
+(second case).
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-go" id="src-proxy-core-tests-pipe2lconn"><span class="org-keyword">func</span> <span class="org-function-name">TestPipe2LConn</span>(t *<span class="org-type">testing.T</span>) {
+        lConn := <span class="org-function-name">newMockConn</span>()
+        rConn := <span class="org-function-name">newMockConn</span>()
+
+        done := <span class="org-builtin">make</span>(<span class="org-keyword">chan</span> <span class="org-type">bool</span>)
+
+        <span class="org-keyword">go</span> <span class="org-keyword">func</span>() {
+                err1, err2 := <span class="org-function-name">Pipe</span>(lConn, rConn)
+
+                <span class="org-keyword">if</span> err1 != <span class="org-constant">nil</span> {
+                        t.<span class="org-function-name">Error</span>(<span class="org-string">"conn1 failed: %s"</span>, err1.<span class="org-function-name">Error</span>())
+                }
+
+                <span class="org-keyword">if</span> err2 != <span class="org-constant">nil</span> {
+                        t.<span class="org-function-name">Error</span>(<span class="org-string">"conn2 failed: %s"</span>, err2.<span class="org-function-name">Error</span>())
+                }
+
+                done &lt;- <span class="org-constant">true</span>
+        }()
+
+        lConn.<span class="org-function-name">Close</span>()
+
+        &lt;-done
+}
+</pre>
+</div>
+
+<p>
+Closing the remote connection must make Pipe return successfully
+(second case).
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-go" id="src-proxy-core-tests-pipe2rconn"><span class="org-keyword">func</span> <span class="org-function-name">TestPipe2RConn</span>(t *<span class="org-type">testing.T</span>) {
+        lConn := <span class="org-function-name">newMockConn</span>()
+        rConn := <span class="org-function-name">newMockConn</span>()
+
+        done := <span class="org-builtin">make</span>(<span class="org-keyword">chan</span> <span class="org-type">bool</span>)
+
+        <span class="org-keyword">go</span> <span class="org-keyword">func</span>() {
+                err1, err2 := <span class="org-function-name">Pipe</span>(lConn, rConn)
+
+                <span class="org-keyword">if</span> err1 != <span class="org-constant">nil</span> {
+                        t.<span class="org-function-name">Error</span>(<span class="org-string">"conn1 failed: %s"</span>, err1.<span class="org-function-name">Error</span>())
+                }
+
+                <span class="org-keyword">if</span> err2 != <span class="org-constant">nil</span> {
+                        t.<span class="org-function-name">Error</span>(<span class="org-string">"conn2 failed: %s"</span>, err2.<span class="org-function-name">Error</span>())
+                }
+
+                done &lt;- <span class="org-constant">true</span>
+        }()
+
+        rConn.<span class="org-function-name">Close</span>()
+
+        &lt;-done
+}
+</pre>
+</div>
+
+<p>
+If some network error happens on the local socket, then Pipe
+should fail and return the error on <i>lErr</i> and <i>rErr</i> should be <i>nil</i>.
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-go" id="src-proxy-core-tests-pipe3lconn"><span class="org-keyword">func</span> <span class="org-function-name">TestPipe3LConn</span>(t *<span class="org-type">testing.T</span>) {
+        lConn := <span class="org-function-name">newMockConn</span>()
+        rConn := <span class="org-function-name">newMockConn</span>()
+
+        done := <span class="org-builtin">make</span>(<span class="org-keyword">chan</span> <span class="org-type">bool</span>)
+
+        <span class="org-keyword">go</span> <span class="org-keyword">func</span>() {
+                lErr, rErr := <span class="org-function-name">Pipe</span>(lConn, rConn)
+
+                <span class="org-keyword">if</span> lErr == <span class="org-constant">nil</span> {
+                        t.<span class="org-function-name">Error</span>(<span class="org-string">"conn1 should fail..."</span>)
+                }
+
+                <span class="org-keyword">if</span> rErr != <span class="org-constant">nil</span> {
+                        t.<span class="org-function-name">Error</span>(<span class="org-string">"conn2 failed: %s"</span>, rErr.<span class="org-function-name">Error</span>())
+                }
+
+                done &lt;- <span class="org-constant">true</span>
+        }()
+
+        lConn.<span class="org-function-name">Write</span>([]<span class="org-function-name">byte</span>(<span class="org-string">"this"</span>))
+        lConn.<span class="org-function-name">Write</span>([]<span class="org-function-name">byte</span>(<span class="org-string">"will"</span>))
+        lConn.<span class="org-function-name">Write</span>([]<span class="org-function-name">byte</span>(<span class="org-string">"trigger"</span>))
+        lConn.<span class="org-function-name">Write</span>([]<span class="org-function-name">byte</span>(<span class="org-string">"an"</span>))
+        lConn.<span class="org-function-name">Write</span>([]<span class="org-function-name">byte</span>(<span class="org-string">"error"</span>))
+
+        &lt;-done
+}
+</pre>
+</div>
+
+<p>
+If some network error happens on the local socket, then Pipe
+should fail and return the error on <i>lErr</i> and <i>rErr</i> should be <i>nil</i>.
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-go" id="src-proxy-core-tests-pipe3rconn"><span class="org-keyword">func</span> <span class="org-function-name">TestPipe3RConn</span>(t *<span class="org-type">testing.T</span>) {
+        lConn := <span class="org-function-name">newMockConn</span>()
+        rConn := <span class="org-function-name">newMockConn</span>()
+
+        done := <span class="org-builtin">make</span>(<span class="org-keyword">chan</span> <span class="org-type">bool</span>)
+
+        <span class="org-keyword">go</span> <span class="org-keyword">func</span>() {
+                lErr, rErr := <span class="org-function-name">Pipe</span>(lConn, rConn)
+
+                <span class="org-keyword">if</span> lErr != <span class="org-constant">nil</span> {
+                        t.<span class="org-function-name">Error</span>(<span class="org-string">"lErr failed: %s"</span>, lErr.<span class="org-function-name">Error</span>())
+                }
+
+                <span class="org-keyword">if</span> rErr == <span class="org-constant">nil</span> {
+                        t.<span class="org-function-name">Error</span>(<span class="org-string">"conn1 should fail..."</span>)
+                }
+
+                done &lt;- <span class="org-constant">true</span>
+        }()
+
+        rConn.<span class="org-function-name">Write</span>([]<span class="org-function-name">byte</span>(<span class="org-string">"this"</span>))
+        rConn.<span class="org-function-name">Write</span>([]<span class="org-function-name">byte</span>(<span class="org-string">"will"</span>))
+        rConn.<span class="org-function-name">Write</span>([]<span class="org-function-name">byte</span>(<span class="org-string">"trigger"</span>))
+        rConn.<span class="org-function-name">Write</span>([]<span class="org-function-name">byte</span>(<span class="org-string">"an"</span>))
+        rConn.<span class="org-function-name">Write</span>([]<span class="org-function-name">byte</span>(<span class="org-string">"error"</span>))
+
+        &lt;-done
+}
+</pre>
+</div>
+
+<div class="org-src-container">
+
+<pre class="src src-go" id="src-proxy-core-tests-pipe"><span class="org-keyword">func</span> <span class="org-function-name">TestPipe1</span>(t *<span class="org-type">testing.T</span>) {
+        lConn := <span class="org-function-name">newMockConn</span>()
+        rConn := <span class="org-function-name">newMockConn</span>()
+
+        <span class="org-keyword">go</span> <span class="org-keyword">func</span>() {
+                err1, err2 := <span class="org-function-name">Pipe</span>(lConn, rConn)
+
+                <span class="org-keyword">if</span> err1 != <span class="org-constant">nil</span> {
+                        t.<span class="org-function-name">Errorf</span>(<span class="org-string">"Conn1 failed: %s"</span>, err1.<span class="org-function-name">Error</span>())
+                }
+
+                <span class="org-keyword">if</span> err2 != <span class="org-constant">nil</span> {
+                        t.<span class="org-function-name">Errorf</span>(<span class="org-string">"Conn2 failed: %s"</span>, err2.<span class="org-function-name">Error</span>())
+                }
+        }()
+
+        lConn.<span class="org-function-name">Write</span>([]<span class="org-function-name">byte</span>(<span class="org-string">"teste"</span>))
+
+        data := <span class="org-builtin">make</span>([]<span class="org-type">byte</span>, 5)
+
+        n, err := rConn.<span class="org-function-name">Read</span>(data)
+
+        <span class="org-keyword">if</span> err != <span class="org-constant">nil</span> {
+                t.<span class="org-function-name">Error</span>(err)
+                <span class="org-keyword">return</span>
+        }
+
+        <span class="org-keyword">if</span> n != 5 {
+                t.<span class="org-function-name">Errorf</span>(<span class="org-string">"Expected 5 bytes, received %d"</span>, n)
+                <span class="org-keyword">return</span>
+        }
+
+        <span class="org-keyword">if</span> <span class="org-function-name">string</span>(data) != <span class="org-string">"teste"</span> {
+                t.<span class="org-function-name">Errorf</span>(<span class="org-string">"Expected '%s' but received '%s'"</span>,
+                        <span class="org-string">"teste"</span>, <span class="org-function-name">string</span>(data))
+        }
+}
+
+<span class="org-keyword">func</span> <span class="org-function-name">TestPipe2LConn</span>(t *<span class="org-type">testing.T</span>) {
+        lConn := <span class="org-function-name">newMockConn</span>()
+        rConn := <span class="org-function-name">newMockConn</span>()
+
+        done := <span class="org-builtin">make</span>(<span class="org-keyword">chan</span> <span class="org-type">bool</span>)
+
+        <span class="org-keyword">go</span> <span class="org-keyword">func</span>() {
+                err1, err2 := <span class="org-function-name">Pipe</span>(lConn, rConn)
+
+                <span class="org-keyword">if</span> err1 != <span class="org-constant">nil</span> {
+                        t.<span class="org-function-name">Error</span>(<span class="org-string">"conn1 failed: %s"</span>, err1.<span class="org-function-name">Error</span>())
+                }
+
+                <span class="org-keyword">if</span> err2 != <span class="org-constant">nil</span> {
+                        t.<span class="org-function-name">Error</span>(<span class="org-string">"conn2 failed: %s"</span>, err2.<span class="org-function-name">Error</span>())
+                }
+
+                done &lt;- <span class="org-constant">true</span>
+        }()
+
+        lConn.<span class="org-function-name">Close</span>()
+
+        &lt;-done
+}
+<span class="org-keyword">func</span> <span class="org-function-name">TestPipe2RConn</span>(t *<span class="org-type">testing.T</span>) {
+        lConn := <span class="org-function-name">newMockConn</span>()
+        rConn := <span class="org-function-name">newMockConn</span>()
+
+        done := <span class="org-builtin">make</span>(<span class="org-keyword">chan</span> <span class="org-type">bool</span>)
+
+        <span class="org-keyword">go</span> <span class="org-keyword">func</span>() {
+                err1, err2 := <span class="org-function-name">Pipe</span>(lConn, rConn)
+
+                <span class="org-keyword">if</span> err1 != <span class="org-constant">nil</span> {
+                        t.<span class="org-function-name">Error</span>(<span class="org-string">"conn1 failed: %s"</span>, err1.<span class="org-function-name">Error</span>())
+                }
+
+                <span class="org-keyword">if</span> err2 != <span class="org-constant">nil</span> {
+                        t.<span class="org-function-name">Error</span>(<span class="org-string">"conn2 failed: %s"</span>, err2.<span class="org-function-name">Error</span>())
+                }
+
+                done &lt;- <span class="org-constant">true</span>
+        }()
+
+        rConn.<span class="org-function-name">Close</span>()
+
+        &lt;-done
+}
+<span class="org-keyword">func</span> <span class="org-function-name">TestPipe3LConn</span>(t *<span class="org-type">testing.T</span>) {
+        lConn := <span class="org-function-name">newMockConn</span>()
+        rConn := <span class="org-function-name">newMockConn</span>()
+
+        done := <span class="org-builtin">make</span>(<span class="org-keyword">chan</span> <span class="org-type">bool</span>)
+
+        <span class="org-keyword">go</span> <span class="org-keyword">func</span>() {
+                lErr, rErr := <span class="org-function-name">Pipe</span>(lConn, rConn)
+
+                <span class="org-keyword">if</span> lErr == <span class="org-constant">nil</span> {
+                        t.<span class="org-function-name">Error</span>(<span class="org-string">"conn1 should fail..."</span>)
+                }
+
+                <span class="org-keyword">if</span> rErr != <span class="org-constant">nil</span> {
+                        t.<span class="org-function-name">Error</span>(<span class="org-string">"conn2 failed: %s"</span>, rErr.<span class="org-function-name">Error</span>())
+                }
+
+                done &lt;- <span class="org-constant">true</span>
+        }()
+
+        lConn.<span class="org-function-name">Write</span>([]<span class="org-function-name">byte</span>(<span class="org-string">"this"</span>))
+        lConn.<span class="org-function-name">Write</span>([]<span class="org-function-name">byte</span>(<span class="org-string">"will"</span>))
+        lConn.<span class="org-function-name">Write</span>([]<span class="org-function-name">byte</span>(<span class="org-string">"trigger"</span>))
+        lConn.<span class="org-function-name">Write</span>([]<span class="org-function-name">byte</span>(<span class="org-string">"an"</span>))
+        lConn.<span class="org-function-name">Write</span>([]<span class="org-function-name">byte</span>(<span class="org-string">"error"</span>))
+
+        &lt;-done
+}
+<span class="org-keyword">func</span> <span class="org-function-name">TestPipe3RConn</span>(t *<span class="org-type">testing.T</span>) {
+        lConn := <span class="org-function-name">newMockConn</span>()
+        rConn := <span class="org-function-name">newMockConn</span>()
+
+        done := <span class="org-builtin">make</span>(<span class="org-keyword">chan</span> <span class="org-type">bool</span>)
+
+        <span class="org-keyword">go</span> <span class="org-keyword">func</span>() {
+                lErr, rErr := <span class="org-function-name">Pipe</span>(lConn, rConn)
+
+                <span class="org-keyword">if</span> lErr != <span class="org-constant">nil</span> {
+                        t.<span class="org-function-name">Error</span>(<span class="org-string">"lErr failed: %s"</span>, lErr.<span class="org-function-name">Error</span>())
+                }
+
+                <span class="org-keyword">if</span> rErr == <span class="org-constant">nil</span> {
+                        t.<span class="org-function-name">Error</span>(<span class="org-string">"conn1 should fail..."</span>)
+                }
+
+                done &lt;- <span class="org-constant">true</span>
+        }()
+
+        rConn.<span class="org-function-name">Write</span>([]<span class="org-function-name">byte</span>(<span class="org-string">"this"</span>))
+        rConn.<span class="org-function-name">Write</span>([]<span class="org-function-name">byte</span>(<span class="org-string">"will"</span>))
+        rConn.<span class="org-function-name">Write</span>([]<span class="org-function-name">byte</span>(<span class="org-string">"trigger"</span>))
+        rConn.<span class="org-function-name">Write</span>([]<span class="org-function-name">byte</span>(<span class="org-string">"an"</span>))
+        rConn.<span class="org-function-name">Write</span>([]<span class="org-function-name">byte</span>(<span class="org-string">"error"</span>))
+
+        &lt;-done
+}
+</pre>
+</div>
+</div>
+</li></ol>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-11" class="outline-2">
+<h2 id="sec-11"><span class="section-number-2">11</span> Work in progress</h2>
+<div class="outline-text-2" id="text-11">
+</div><div id="outline-container-sec-11-1" class="outline-3">
+<h3 id="sec-11-1"><span class="section-number-3">11.1</span> Dchan <code>[6/8]</code>&#xa0;&#xa0;&#xa0;<span class="tag"><span class="dchan">dchan</span></span></h3>
+<div class="outline-text-3" id="text-11-1">
+</div><div id="outline-container-sec-11-1-1" class="outline-4">
+<h4 id="sec-11-1-1"><span class="section-number-4">11.1.1</span> <span class="done DONE">DONE</span> Plan9 Research and Proof of Concept</h4>
+<div class="outline-text-4" id="text-11-1-1">
+</div>
+</div>
+
+<div id="outline-container-sec-11-1-2" class="outline-4">
+<h4 id="sec-11-1-2"><span class="section-number-4">11.1.2</span> <span class="done DONE">DONE</span> Design of API</h4>
+</div>
+
+<div id="outline-container-sec-11-1-3" class="outline-4">
+<h4 id="sec-11-1-3"><span class="section-number-4">11.1.3</span> <span class="done DONE">DONE</span> Add travis-ci integration</h4>
+<div class="outline-text-4" id="text-11-1-3">
+</div>
+</div>
+
+<div id="outline-container-sec-11-1-4" class="outline-4">
+<h4 id="sec-11-1-4"><span class="section-number-4">11.1.4</span> <span class="done DONE">DONE</span> Make possible download the last version of book</h4>
+<div class="outline-text-4" id="text-11-1-4">
+</div>
+</div>
+
+<div id="outline-container-sec-11-1-5" class="outline-4">
+<h4 id="sec-11-1-5"><span class="section-number-4">11.1.5</span> <span class="done DONE">DONE</span> Publish HTML version of master branch</h4>
+</div>
+<div id="outline-container-sec-11-1-6" class="outline-4">
+<h4 id="sec-11-1-6"><span class="section-number-4">11.1.6</span> <span class="done DONE">DONE</span> Design of dchan-proxy</h4>
+<div class="outline-text-4" id="text-11-1-6">
+</div>
+</div>
+
+<div id="outline-container-sec-11-1-7" class="outline-4">
+<h4 id="sec-11-1-7"><span class="section-number-4">11.1.7</span> Dchan-proxy <code>[0/2]</code>&#xa0;&#xa0;&#xa0;<span class="tag"><span class="proxy">proxy</span></span></h4>
+<div class="outline-text-4" id="text-11-1-7">
+</div><ol class="org-ol"><li><a id="sec-11-1-7-1" name="sec-11-1-7-1"></a><span class="todo TODO">TODO</span> Implement dchan-proxy PoC <code>[5/7]</code><br  /><div class="outline-text-5" id="text-11-1-7-1">
+</div>
+<ol class="org-ol"><li><a id="sec-11-1-7-1-1" name="sec-11-1-7-1-1"></a><span class="done DONE">DONE</span> Create the basic 9P file server<br  /><div class="outline-text-6" id="text-11-1-7-1-1">
+</div>
+</li>
+<li><a id="sec-11-1-7-1-2" name="sec-11-1-7-1-2"></a><span class="done DONE">DONE</span> Add testing infrastructure<br  /><div class="outline-text-6" id="text-11-1-7-1-2">
+</div>
+</li>
+<li><a id="sec-11-1-7-1-3" name="sec-11-1-7-1-3"></a><span class="done DONE">DONE</span> Test usage of unix socket as transport protocol<br  /><div class="outline-text-6" id="text-11-1-7-1-3">
+</div>
+</li>
+<li><a id="sec-11-1-7-1-4" name="sec-11-1-7-1-4"></a><span class="done DONE">DONE</span> Separate testing infrastructure in a sub-module. <a href="https://github.com/NeowayLabs/dchan/issues/10">#10</a><br  /><div class="outline-text-6" id="text-11-1-7-1-4">
+</div>
+</li>
+<li><a id="sec-11-1-7-1-5" name="sec-11-1-7-1-5"></a><span class="done DONE">DONE</span> Study the Go API for 9P clients (for proxying requests)<br  /><div class="outline-text-6" id="text-11-1-7-1-5">
+</div>
+</li>
+<li><a id="sec-11-1-7-1-6" name="sec-11-1-7-1-6"></a>WAITING Implement the proxy as a pure TCP-proxy<br  /><div class="outline-text-6" id="text-11-1-7-1-6">
+<ul class="org-ul">
+<li>State &ldquo;WAITING&rdquo; from &ldquo;DONE&rdquo; <span class="timestamp-wrapper"><span class="timestamp">[2016-03-15 Tue 14:18]</span></span> <br  />
+       The current proxy design have flaws discovered in the test
+cases. It&rsquo;ll require more research.
+</li>
+</ul>
+</div>
+</li>
+<li><a id="sec-11-1-7-1-7" name="sec-11-1-7-1-7"></a><span class="todo TODO">TODO</span> Achieve good test coverage<br  /><div class="outline-text-6" id="text-11-1-7-1-7">
+</div>
+</li></ol>
+</li>
+
+<li><a id="sec-11-1-7-2" name="sec-11-1-7-2"></a><span class="todo TODO">TODO</span> Create intensive tests simulating network problems<br  /><div class="outline-text-5" id="text-11-1-7-2">
+</div>
+</li></ol>
+</div>
+
+<div id="outline-container-sec-11-1-8" class="outline-4">
+<h4 id="sec-11-1-8"><span class="section-number-4">11.1.8</span> Dchan-server <code>[0/0]</code>&#xa0;&#xa0;&#xa0;<span class="tag"><span class="server">server</span></span></h4>
+<div class="outline-text-4" id="text-11-1-8">
+</div><ol class="org-ol"><li><a id="sec-11-1-8-1" name="sec-11-1-8-1"></a><span class="todo TODO">TODO</span> Port Plan9 version to Go<br  /><ol class="org-ol"><li><a id="sec-11-1-8-1-1" name="sec-11-1-8-1-1"></a><span class="done DONE">DONE</span> Add basic unit tests to ob-go<br  /><div class="outline-text-6" id="text-11-1-8-1-1">
+</div>
+</li>
+<li><a id="sec-11-1-8-1-2" name="sec-11-1-8-1-2"></a><span class="done DONE">DONE</span> Beautify go code generated by org-tangle (ob-go)<br  /><div class="outline-text-6" id="text-11-1-8-1-2">
+</div>
+</li>
+<li><a id="sec-11-1-8-1-3" name="sec-11-1-8-1-3"></a><span class="done DONE">DONE</span> Fix ob-go bug (issue #1)<br  /><div class="outline-text-6" id="text-11-1-8-1-3">
+</div>
+</li>
+
+<li><a id="sec-11-1-8-1-4" name="sec-11-1-8-1-4"></a><span class="todo TODO">TODO</span> Create the basic Go 9P file server.<br  /><div class="outline-text-6" id="text-11-1-8-1-4">
+</div>
+</li></ol>
+</li></ol>
+</div>
+
+
+<div id="outline-container-sec-11-1-9" class="outline-4">
+<h4 id="sec-11-1-9"><span class="section-number-4">11.1.9</span> <span class="todo TODO">TODO</span> Port part of our architecture to use dchan</h4>
+</div>
+
+<div id="outline-container-sec-11-1-10" class="outline-4">
+<h4 id="sec-11-1-10"><span class="section-number-4">11.1.10</span> <span class="todo TODO">TODO</span> Add some instrumentation to compare against RabbitMQ</h4>
+</div>
+
+<div id="outline-container-sec-11-1-11" class="outline-4">
+<h4 id="sec-11-1-11"><span class="section-number-4">11.1.11</span> Generate comparison tables <code>[0/2]</code></h4>
+<div class="outline-text-4" id="text-11-1-11">
+</div><ol class="org-ol"><li><a id="sec-11-1-11-1" name="sec-11-1-11-1"></a><span class="todo TODO">TODO</span> Benchmark tables<br  /></li>
+<li><a id="sec-11-1-11-2" name="sec-11-1-11-2"></a><span class="todo TODO">TODO</span> LoC on client side (dchan vs amqp)<br  /><div class="outline-text-5" id="text-11-1-11-2">
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+<caption class="t-above"><span class="table-number">Table 1:</span> Clock summary at <span class="timestamp-wrapper"><span class="timestamp">[2016-03-18 Fri 09:07]</span></span></caption>
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="right" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">Headline</th>
+<th scope="col" class="left">Time</th>
+<th scope="col" class="left">&#xa0;</th>
+<th scope="col" class="left">&#xa0;</th>
+<th scope="col" class="right">&#xa0;</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left"><b>Total time</b></td>
+<td class="left"><b>28d 0:27</b></td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="right">&#xa0;</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="left">Dchan [6/8]</td>
+<td class="left">28d 0:27</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="right">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">\_  DONE Plan9 Research and Proof of Concept</td>
+<td class="left">&#xa0;</td>
+<td class="left">23d 0:00</td>
+<td class="left">&#xa0;</td>
+<td class="right">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">\_  DONE Add travis-ci integration</td>
+<td class="left">&#xa0;</td>
+<td class="left">10:20</td>
+<td class="left">&#xa0;</td>
+<td class="right">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">\_  DONE Make possible download the last&#x2026;</td>
+<td class="left">&#xa0;</td>
+<td class="left">3:13</td>
+<td class="left">&#xa0;</td>
+<td class="right">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">\_  DONE Design of dchan-proxy</td>
+<td class="left">&#xa0;</td>
+<td class="left">9:16</td>
+<td class="left">&#xa0;</td>
+<td class="right">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">\_  Dchan-proxy [0/2]</td>
+<td class="left">&#xa0;</td>
+<td class="left">1d 12:38</td>
+<td class="left">&#xa0;</td>
+<td class="right">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">\_    TODO Implement dchan-proxy PoC [5/7]</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="left">1d 12:38</td>
+<td class="right">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">\_      DONE Create the basic 9P file server</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="right">7:03</td>
+</tr>
+
+<tr>
+<td class="left">\_      DONE Add testing infrastructure</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="right">4:55</td>
+</tr>
+
+<tr>
+<td class="left">\_      DONE Test usage of unix socket as&#x2026;</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="right">1:29</td>
+</tr>
+
+<tr>
+<td class="left">\_      DONE Separate testing infrastructure&#x2026;</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="right">1:59</td>
+</tr>
+
+<tr>
+<td class="left">\_      DONE Study the Go API for 9P clients&#x2026;</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="right">1:12</td>
+</tr>
+
+<tr>
+<td class="left">\_      WAITING Implement the proxy as a pure&#x2026;</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="right">5:15</td>
+</tr>
+
+<tr>
+<td class="left">\_      TODO Achieve good test coverage</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="right">14:45</td>
+</tr>
+
+<tr>
+<td class="left">\_  Dchan-server [0/0]</td>
+<td class="left">&#xa0;</td>
+<td class="left">2d 13:00</td>
+<td class="left">&#xa0;</td>
+<td class="right">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">\_    TODO Port Plan9 version to Go</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="left">2d 13:00</td>
+<td class="right">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">\_      DONE Add basic unit tests to ob-go</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="right">2d 2:11</td>
+</tr>
+
+<tr>
+<td class="left">\_      DONE Beautify go code generated by&#x2026;</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="right">0:50</td>
+</tr>
+
+<tr>
+<td class="left">\_      DONE Fix ob-go bug (issue #1)</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="right">0:33</td>
+</tr>
+
+<tr>
+<td class="left">\_      TODO Create the basic Go 9P file server.</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+<td class="right">9:26</td>
+</tr>
+</tbody>
+</table>
+</div>
+</li></ol>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-12" class="outline-2">
+<h2 id="sec-12"><span class="section-number-2">12</span> Bibliography</h2>
+<div class="outline-text-2" id="text-12">
+<p>
+\bibliographystyle{plainnat}
+\bibliography{./dchan}
+</p>
+</div>
+</div>
+<div id="footnotes">
+<h2 class="footnotes">Footnotes: </h2>
+<div id="text-footnotes">
+
+<div class="footdef"><sup><a id="fn.1" name="fn.1" class="footnum" href="#fnr.1">1</a></sup> <p class="footpara">
+R. Milner, &ldquo;A Calculus of Communicating Systems&rdquo;, Lecture Notes
+in Computer Science, Vol. 92, Springer-Verlag, 1980.
+</p></div>
+
+<div class="footdef"><sup><a id="fn.2" name="fn.2" class="footnum" href="#fnr.2">2</a></sup> <p class="footpara">
+<a href="https://golang.org/ref/spec\#Select_statements">https://golang.org/ref/spec\#Select_statements</a>
+</p></div>
+
+
+</div>
+</div></div>
+<div id="postamble" class="status">
+<p class="date">Date: 2016-03-29</p>
+<p class="author">Author: Tiago Natel de Moura</p>
+<p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.4.1 (<a href="http://orgmode.org">Org</a> mode 8.2.10)</p>
+<p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
+</div>
+</body>
+</html>
