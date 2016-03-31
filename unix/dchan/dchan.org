@@ -126,6 +126,12 @@ function readctl {
 
 }
 
+function verify_concurrency {
+    local mntp="$1"
+
+
+}
+
 # Running backend 9P file server
 
 MNTPOINT="/tmp/dchan"
@@ -146,6 +152,13 @@ if [ -n "$RES" ]; then
     exit 1
 fi
 
+RES="`verify_concurrency \"${MNTPOINT}\"`"
+if [ -n "$RES" ]; then
+    echo "Failed to verify concurrency of 9P messages"
+    teardown "${MNTPOINT}" "${DAEMONPID}"
+    exit 1
+fi
+
 teardown "${MNTPOINT}" "${DAEMONPID}"
 #+END_SRC
 
@@ -160,7 +173,7 @@ teardown "${MNTPOINT}" "${DAEMONPID}"
 #+BEGIN_SRC go
 type File struct {
 	srv.File
-        aux Faux
+        aux faux
 }
 #+END_SRC
 
@@ -168,8 +181,45 @@ type File struct {
 
 #+NAME: src-dchan-faux-dat
 #+BEGIN_SRC go
-type Faux struct {
+type req struct {
+	fid *srv.FFid
+	data []byte
+	offset uint64
+}
+
+type faux struct {
 	ftype uint8
+
+        channel chan []byte
+
+        rq chan req
+        rw chan req
+}
+
+const Fctl = iota+1
+
+const MaxRQueue = 1024
+const MaxWQueue = 1024
+
+#+END_SRC
+
+    /Createctl/ is the function responsible for creation of the /ctl/
+    file.
+
+#+NAME: src-dchan-file-createctl
+#+BEGIN_SRC go
+func createctl(root *srv.File, user p.User) error {
+	f := &File{}
+	f.aux.ftype = Fctl
+	f.aux.channel = make(chan []byte, 0)
+
+	err := f.Add(root, "ctl", user, nil, 0777, f)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 #+END_SRC
 
@@ -178,21 +228,22 @@ type Faux struct {
 
 #+NAME: src-dchan-file-dat-read
 #+BEGIN_SRC go
-func (file *File) Read(fid *srv.FFid, buf []byte, offset uint64) (int, error) {
-	b := []byte("hacked by i4k")
-	n := len(b)
+func (file *File) Read(fid *srv.FFid, buf []byte, _ uint64) (int, error) {
+	data, ok := <-file.aux.channel
 
-	if offset >= uint64(n) {
-		return 0, nil
+	if !ok {
+		return 0, errors.New("error reading from channel")
 	}
 
-	b = b[int(offset):n]
-	n -= int(offset)
+        fmt.Printf("Got %s\n", string(data))
+
+	n := len(data)
+
 	if len(buf) < n {
 		n = len(buf)
 	}
 
-	copy(buf[offset:int(offset)+n], b[offset:])
+	copy(buf[:n], data)
 	return n, nil
 }
 #+END_SRC
@@ -202,7 +253,11 @@ func (file *File) Read(fid *srv.FFid, buf []byte, offset uint64) (int, error) {
 #+NAME: src-dchan-file-dat-meth
 #+BEGIN_SRC go
 func (file *File) Write(fid *srv.FFid, data []byte, offset uint64) (int, error) {
-	return 0, errors.New("permission denied")
+	d := make([]byte, len(data))
+	copy(d, data)
+	file.aux.channel <- d
+
+	return len(data), nil
 }
 
 func (file *File) Wstat(fid *srv.FFid, dir *p.Dir) error {
@@ -212,14 +267,16 @@ func (file *File) Wstat(fid *srv.FFid, dir *p.Dir) error {
 func (file *File) Remove(fid *srv.FFid) error {
 	return nil
 }
+
 #+END_SRC
 
-#+NAME: src-dchan-file.go
-#+HEADER: :imports '("errors" "github.com/lionkov/go9p/p" "github.com/lionkov/go9p/p/srv")
+#+NAME: src-dchan-fs.go
+#+HEADER: :imports '("fmt" "errors" "github.com/lionkov/go9p/p" "github.com/lionkov/go9p/p/srv")
 #+BEGIN_SRC go :noweb yes :tangle fs.go :main no :package main
 <<src-dchan-file-dat>>
 <<src-dchan-faux-dat>>
 
+<<src-dchan-file-createctl>>
 <<src-dchan-file-dat-read>>
 <<src-dchan-file-dat-meth>>
 #+END_SRC
@@ -236,6 +293,7 @@ func (file *File) Remove(fid *srv.FFid) error {
 +----------+---------------+------------------------+
 |  debug   |    not set    |    Enable debugging    |
 +----------+---------------+------------------------+
+
 
     Command-line arguments are defined below:
 
@@ -259,20 +317,22 @@ var root *srv.File
 
 func main() {
 	var err error
-	var ctl *File
 	var s *srv.Fsrv
 
 	flag.Parse()
+
 	user := p.OsUsers.Uid2User(os.Geteuid())
 	root = new(srv.File)
+
 	err = root.Add(nil, "/", user, nil, p.DMDIR|0777, nil)
+
 	if err != nil {
 		goto error
 	}
 
-	ctl = new(File)
-	err = ctl.Add(root, "ctl", p.OsUsers.Uid2User(os.Geteuid()), nil, 0444, ctl)
-	if err != nil {
+        err = createctl(root, user)
+
+        if err != nil {
 		goto error
 	}
 
@@ -283,11 +343,17 @@ func main() {
 		s.Debuglevel = 1
 	}
 
-	s.Start(s)
+	if !s.Start(s) {
+		err = errors.New("Failed to start file server")
+		goto error
+	}
+
 	err = s.StartNetListener("tcp", *addr)
+
 	if err != nil {
 		goto error
 	}
+
 	return
 
 error:
@@ -296,7 +362,7 @@ error:
 #+END_SRC
 
 #+NAME: src-main.go
-#+HEADER: :imports '("flag" "fmt" "log" "os" "github.com/lionkov/go9p/p" "github.com/lionkov/go9p/p/srv")
+#+HEADER: :imports '("errors" "flag" "fmt" "log" "os" "github.com/lionkov/go9p/p" "github.com/lionkov/go9p/p/srv")
 #+BEGIN_SRC go :tangle main.go :noweb yes :main no :package main :exports none
 <<src-dchan-cmdargs>>
 <<src-dchan-main>>
