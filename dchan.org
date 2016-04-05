@@ -120,7 +120,7 @@ install:
 
 * Work in progress
 
-#+INCLUDE: "TODO.org"
+#+INCLUDE: "todo_dchan.org"
 
 * Bibliography
 
