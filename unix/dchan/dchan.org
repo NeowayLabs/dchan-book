@@ -195,9 +195,6 @@ type (
 		channel  chan []byte
 		chansize uint64
 
-		rq chan req
-		rw chan req
-
 		rx    uint64
 		tx    uint64
 		avgrx uint64
@@ -212,10 +209,15 @@ type (
 	}
 )
 
-const Fctl = iota + 1
+const (
+	Fctl = iota + 1
+	Fapp
+)
 
-const MaxRQueue = 1024
-const MaxWQueue = 1024
+const (
+	MaxRQueue = 1024
+	MaxWQueue = 1024
+)
 
 #+END_SRC
 
@@ -228,6 +230,7 @@ const MaxWQueue = 1024
 var (
 	files *fauxlist
 	fileslk *sync.Mutex
+        user p.User
 )
 #+END_SRC
 
@@ -241,13 +244,7 @@ func createctl(root *srv.File, user p.User) error {
         f.aux.Mutex = &sync.Mutex{}
 	f.aux.ftype = Fctl
 
-	err := f.Add(root, "ctl", user, nil, 0777, f)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return f.Add(root, "ctl", user, nil, 0777, f)
 }
 #+END_SRC
 
@@ -256,7 +253,7 @@ func createctl(root *srv.File, user p.User) error {
 
 #+NAME: src-dchan-file-dat-read
 #+BEGIN_SRC go
-func (file *File) Read(fid *srv.FFid, buf []byte, _ uint64) (int, error) {
+func (file *File) readctl(fid *srv.FFid, buf []byte, _ uint64) (int, error) {
 	buffer := bytes.NewBuffer(make([]byte, 0, 1024))
 
 	fileslk.Lock()
@@ -296,6 +293,26 @@ func (file *File) Read(fid *srv.FFid, buf []byte, _ uint64) (int, error) {
 	copy(buf[:n], data)
 	return n, nil
 }
+
+func (file *File) readapp(_ *srv.FFid, _ []byte, _ uint64) (int, error) {
+	return 0, errors.New("Not imṕlemented")
+}
+
+func (file *File) Read(fid *srv.FFid, buf []byte, offset uint64) (int, error) {
+	f, ok := fid.F.Ops.(File)
+
+	if !ok {
+		return 0, errors.New("error")
+	}
+
+	if f.aux.ftype == Fctl {
+		return file.readctl(fid, buf, offset)
+	} else if f.aux.ftype == Fapp {
+		return file.readapp(fid, buf, offset)
+	}
+
+	return 0, errors.New("Invalid file")
+}
 #+END_SRC
 
     /Write/, /Stat/ and /Wstat/ aren't implemented yet:
@@ -318,10 +335,30 @@ func (file *File) Remove(fid *srv.FFid) error {
 	return nil
 }
 
+func (file *File) Create(fid *srv.FFid, name string, perm uint32) (*srv.File, error) {
+	f := &File{}
+	f.aux.Mutex = &sync.Mutex{}
+	f.aux.ftype = Fapp
+
+	err := f.Add(&file.File, name, user, nil, 0777, f)
+
+        fmt.Printf("Im here.....\n")
+
+	if err != nil {
+		return nil, err
+	}
+
+	f.aux.channel = make(chan []byte)
+	f.aux.chansize = 0
+	f.aux.fullpath = "/" + name
+
+	return &f.File, nil
+}
+
 #+END_SRC
 
 #+NAME: src-dchan-fs.go
-#+HEADER: :imports '("fmt" "bytes" "sync" "github.com/lionkov/go9p/p" "github.com/lionkov/go9p/p/srv")
+#+HEADER: :imports '("fmt" "bytes" "os" "errors" "sync" "github.com/lionkov/go9p/p" "github.com/lionkov/go9p/p/srv")
 #+BEGIN_SRC go :noweb yes :tangle fs.go :main no :package main
 <<src-dchan-file-dat>>
 <<src-dchan-faux-dat>>
@@ -330,6 +367,7 @@ func (file *File) Remove(fid *srv.FFid) error {
 
 func init() {
      fileslk = &sync.Mutex{}
+     user = p.OsUsers.Uid2User(os.Geteuid())
 }
 
 <<src-dchan-file-createctl>>
