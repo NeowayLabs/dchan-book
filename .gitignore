@@ -13,3 +13,4 @@ unix/dchan/dchan
 /unix/proxy/Makefile
 /unix/proxy/proxy
 *.go
+unix/testing/helpers.sh

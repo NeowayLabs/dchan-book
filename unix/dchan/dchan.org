@@ -114,7 +114,7 @@ function changedir {
 
 function readctl {
     local mntp="$1"
-    local expected="hacked by i4k"
+    local expected=""
     local cwd="$(pwd)"
 
     cd "${mntp}"
@@ -136,7 +136,7 @@ function verify_concurrency {
 
 MNTPOINT="/tmp/dchan"
 
-setup "${MNTPOINT}" "tcp!localhost!6666" "$(pwd)/dchan -addr 'localhost:6666'"
+setup "${MNTPOINT}" "tcp!0.0.0.0!6666" "$(pwd)/dchan -addr 0.0.0.0:6666"
 
 RES="`changedir \"${MNTPOINT}\"`"
 if [ -n "$RES" ]; then
@@ -181,26 +181,54 @@ type File struct {
 
 #+NAME: src-dchan-faux-dat
 #+BEGIN_SRC go
-type req struct {
-	fid *srv.FFid
-	data []byte
-	offset uint64
-}
+type (
+	req struct {
+		fid    *srv.FFid
+		data   []byte
+		offset uint64
+	}
 
-type faux struct {
-	ftype uint8
+	faux struct {
+		fullpath string
+		ftype uint8
 
-        channel chan []byte
+		channel  chan []byte
+		chansize uint64
 
-        rq chan req
-        rw chan req
-}
+		rq chan req
+		rw chan req
 
-const Fctl = iota+1
+		rx    uint64
+		tx    uint64
+		avgrx uint64
+		avgtx uint64
+
+                *sync.Mutex
+	}
+
+	fauxlist struct {
+		aux  *faux
+		next *fauxlist
+	}
+)
+
+const Fctl = iota + 1
 
 const MaxRQueue = 1024
 const MaxWQueue = 1024
 
+#+END_SRC
+
+    /Files/ stores the list of all files created in the file
+    server. /Fileslk/ is a lock mutex for synchronize access to
+    /files/ global variable.
+
+#+NAME: src-dchan-file-files
+#+BEGIN_SRC go
+var (
+	files *fauxlist
+	fileslk *sync.Mutex
+)
 #+END_SRC
 
     /Createctl/ is the function responsible for creation of the /ctl/
@@ -210,8 +238,8 @@ const MaxWQueue = 1024
 #+BEGIN_SRC go
 func createctl(root *srv.File, user p.User) error {
 	f := &File{}
+        f.aux.Mutex = &sync.Mutex{}
 	f.aux.ftype = Fctl
-	f.aux.channel = make(chan []byte, 0)
 
 	err := f.Add(root, "ctl", user, nil, 0777, f)
 
@@ -229,14 +257,36 @@ func createctl(root *srv.File, user p.User) error {
 #+NAME: src-dchan-file-dat-read
 #+BEGIN_SRC go
 func (file *File) Read(fid *srv.FFid, buf []byte, _ uint64) (int, error) {
-	data, ok := <-file.aux.channel
+	buffer := bytes.NewBuffer(make([]byte, 0, 1024))
 
-	if !ok {
-		return 0, errors.New("error reading from channel")
+	fileslk.Lock()
+
+	for l := files; l != nil; l = l.next {
+		aux := l.aux
+
+		aux.Lock() // sync with filestats
+
+		written, err := buffer.Write([]byte(fmt.Sprintf(
+			"%s\t%d\t%ld\t%ld\t%ld\t%ld\n",
+			aux.fullpath,
+			aux.chansize,
+			aux.rx,
+			aux.tx,
+			aux.avgrx,
+			aux.avgtx,
+		)))
+
+		aux.Unlock()
+
+		if err != nil {
+			fileslk.Unlock()
+			return 0, err
+		}
+
+		buffer.Grow(1024 - written) // guaranteed to be > 0
 	}
 
-        fmt.Printf("Got %s\n", string(data))
-
+	data := buffer.Bytes()
 	n := len(data)
 
 	if len(buf) < n {
@@ -271,10 +321,16 @@ func (file *File) Remove(fid *srv.FFid) error {
 #+END_SRC
 
 #+NAME: src-dchan-fs.go
-#+HEADER: :imports '("fmt" "errors" "github.com/lionkov/go9p/p" "github.com/lionkov/go9p/p/srv")
+#+HEADER: :imports '("fmt" "bytes" "sync" "github.com/lionkov/go9p/p" "github.com/lionkov/go9p/p/srv")
 #+BEGIN_SRC go :noweb yes :tangle fs.go :main no :package main
 <<src-dchan-file-dat>>
 <<src-dchan-faux-dat>>
+
+<<src-dchan-file-files>>
+
+func init() {
+     fileslk = &sync.Mutex{}
+}
 
 <<src-dchan-file-createctl>>
 <<src-dchan-file-dat-read>>

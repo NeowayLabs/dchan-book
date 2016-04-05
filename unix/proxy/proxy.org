@@ -39,10 +39,9 @@ BACKENDPID=""
 function start9pserver {
     local cwd="$(pwd)"
 
-    go get -v -u github.com/lionkov/go9p
     cd ${GOPATH}/src/github.com/lionkov/go9p/p/srv/examples/clonefs/
     go build -v
-    ./clonefs -addr ":6666" -d &
+    ./clonefs -addr ":6667" -d &
 
     BACKENDPID=$!
 
@@ -65,7 +64,7 @@ function changedir {
 start9pserver
 
 rm -f /tmp/dchan-proxy.sock
-setup "/tmp/dchan-proxy" "unix!/tmp/dchan-proxy.sock" "$(pwd)/proxy -laddr unix:///tmp/dchan-proxy.sock -raddr 'localhost:6666'"
+setup "/tmp/dchan-proxy" "unix!/tmp/dchan-proxy.sock" "$(pwd)/proxy -laddr unix:///tmp/dchan-proxy.sock -raddr 'localhost:6667'"
 
 changedir "/tmp/dchan-proxy"
 

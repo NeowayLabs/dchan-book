@@ -24,8 +24,13 @@
 
     1. Create the target dchan directory (eg.: /tmp/dchan)
     2. Run dchan daemon
-    3. Mount dchan on target directory using a non-privileged user;
-       1. Use FUSE until Linux user namespace isnt stable
+    3. Mount dchan on target directory:
+       - Fuse is ideal for userspace mount until linux user
+          namespaces aren't ready, but no 9p fuse implementation is
+          feature-complete for production usage. Plan9Port 9pfuse miss
+          TFLUSH messages for user interrupt requests via CTRL-C/Del.
+       - Current implementation uses v9fs linux kernel module because
+          it's a complete implementation.
 
     If something fail in the steps above, the operating system should
     be rollback (kill dchan daemon, unmount, delete target dir).
@@ -35,13 +40,13 @@
     the right functions for setup and teardown.
 
     The /setup/ function invokes the 9P daemon using a cmdline passed
-    as third argument and then uses 9pfuse to connect to 9P daemon at
-    second argument (take careful and set this correctly in the
-    cmdline argument) and mount the file system in the directory
-    passed as first argument of the function.
+    as third argument and then uses mount(1) to connect to 9P daemon
+    at address passed in the second argument (take careful and set
+    this correctly in the cmdline argument) and mount the file system
+    in the directory passed as first argument of the function.
 
     The PID of the invoked daemon is stored in the DAEMONPID global
-    variable. Setup will wait for daemon initialization and FUSE
+    variable. Setup will wait for daemon initialization and v9fs
     connection before return. The number of seconds to delay is
     configured by global variable DELAY and you should update the
     value according to requirements of your daemon if needed. DELAY
@@ -64,6 +69,19 @@ function setup {
 
     cd ../..
 
+    local trans=$(p9addr_trans "$addr")
+    local hostaddr=$(p9addr_host "$addr")
+
+    if [ "$trans" == "" -o "$hostaddr" == "" ]; then
+        echo "Failed to parse addr: ${addr}"
+        teardown "${targetdir}" ""
+        exit 1
+    fi
+
+    if [ "$trans" == "tcp" ]; then
+        local portoption="port=$(p9addr_port $addr)"
+    fi
+
     # Invokes the daemon
     eval "${cmdline} &"
 
@@ -80,13 +98,13 @@ function setup {
 
     mkdir -p "${targetdir}"
 
-    9pfuse "${addr}" "${targetdir}"
-
-    if [ "$?" != "0" ]; then
-        echo "Failed to mount 9P"
-        teardown "${targetdir}" "${DAEMONPID}"
-        exit 1
-    fi
+    sudo mount -t 9p -o $portoption,trans=$trans,cache=none,sync ${hostaddr} "${targetdir}" || {
+        if [ "$?" != "0" ]; then
+            echo "Failed to mount 9P"
+            teardown "${targetdir}" "${DAEMONPID}"
+            exit 1
+        fi
+    }
 
     # wait for 9P client-server handshake
     sleep "${DELAY}"
@@ -107,6 +125,36 @@ function setup {
         echo "Not mounted yet. Try again with higher delay time..."
         teardown "${targetdir}" "${DAEMONPID}"
         exit 1
+    fi
+}
+#+END_SRC
+
+    /P9addr_trans/, p9addr_host and p9addr_port extract parts of the
+    Plan9 address string.
+
+#+NAME: src-tests-fn-p9addr
+#+BEGIN_SRC sh
+function p9addr_trans {
+    local validtrans=(tcp unix)
+    local trans="$(echo $1 | cut -d'!' -f1)"
+
+    if [[ "${validtrans[*]}" =~ "$trans" ]]; then
+        echo $trans
+    fi
+}
+
+function p9addr_host {
+    local hostaddr="$(echo $1 | cut -d'!' -f2)"
+
+    echo $hostaddr
+}
+
+function p9addr_port {
+    local port="$(echo $1 | cut -d'!' -f3)"
+    local re='^[0-9]+$'
+
+    if [[ "$port" =~ $re ]]; then
+        echo $port
     fi
 }
 #+END_SRC
@@ -132,8 +180,8 @@ function teardown {
     cd /
 
     if [ "$targetdir}" != "" ]; then
-        unmount "${targetdir}"
-        rm -rf "${targetdir}"
+        sudo umount "${targetdir}" || true
+        rm -rf "${targetdir}" || true
     fi
 
     if [ "${daemonpid}" != "" ]; then
@@ -163,9 +211,13 @@ function cleanup() {
 #+NAME: src-tests-acceptance
 #+BEGIN_SRC sh :noweb yes :tangle helpers.sh :shebang #!/bin/bash :exports none
 # Global variables
+set -e
+
 DAEMONPID=""
 DELAY=2
 TARGETDIR=""
+
+<<src-tests-fn-p9addr>>
 
 <<src-tests-fn-cleanup>>
 
