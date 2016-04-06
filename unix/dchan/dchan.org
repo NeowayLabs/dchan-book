@@ -230,7 +230,6 @@ const (
 var (
 	files *fauxlist
 	fileslk *sync.Mutex
-        user p.User
 )
 #+END_SRC
 
@@ -239,12 +238,12 @@ var (
 
 #+NAME: src-dchan-file-createctl
 #+BEGIN_SRC go
-func createctl(root *srv.File, user p.User) error {
+func createctl(root *File) error {
 	f := &File{}
         f.aux.Mutex = &sync.Mutex{}
 	f.aux.ftype = Fctl
 
-	return f.Add(root, "ctl", user, nil, 0777, f)
+	return f.Add(&root.File, "ctl", user, group, 0777, f)
 }
 #+END_SRC
 
@@ -294,20 +293,34 @@ func (file *File) readctl(fid *srv.FFid, buf []byte, _ uint64) (int, error) {
 	return n, nil
 }
 
-func (file *File) readapp(_ *srv.FFid, _ []byte, _ uint64) (int, error) {
-	return 0, errors.New("Not imṕlemented")
+func (file *File) readapp(fid *srv.FFid, buf []byte, offset uint64) (int, error) {
+	aux := file.aux
+
+	data := <-aux.channel
+
+	if data == nil {
+		// Test this case
+		return 0, errors.New("Something not expected haṕpened")
+	}
+
+        fmt.Printf("Got data: '%s'(%d)\n", string(data), len(data))
+
+	n := len(data)
+
+	if len(buf) < n {
+		n = len(buf)
+	}
+
+	copy(buf[:n], data[:n])
+
+        fmt.Printf("Copied '%s'(%d)\n", string(buf), n)
+	return n, nil
 }
 
 func (file *File) Read(fid *srv.FFid, buf []byte, offset uint64) (int, error) {
-	f, ok := fid.F.Ops.(File)
-
-	if !ok {
-		return 0, errors.New("error")
-	}
-
-	if f.aux.ftype == Fctl {
+	if file.aux.ftype == Fctl {
 		return file.readctl(fid, buf, offset)
-	} else if f.aux.ftype == Fapp {
+	} else if file.aux.ftype == Fapp {
 		return file.readapp(fid, buf, offset)
 	}
 
@@ -340,7 +353,7 @@ func (file *File) Create(fid *srv.FFid, name string, perm uint32) (*srv.File, er
 	f.aux.Mutex = &sync.Mutex{}
 	f.aux.ftype = Fapp
 
-	err := f.Add(&file.File, name, user, nil, 0777, f)
+	err := f.Add(&file.File, name, user, group, 0777, f)
 
         fmt.Printf("Im here.....\n")
 
@@ -358,7 +371,7 @@ func (file *File) Create(fid *srv.FFid, name string, perm uint32) (*srv.File, er
 #+END_SRC
 
 #+NAME: src-dchan-fs.go
-#+HEADER: :imports '("fmt" "bytes" "os" "errors" "sync" "github.com/lionkov/go9p/p" "github.com/lionkov/go9p/p/srv")
+#+HEADER: :imports '("fmt" "bytes" "errors" "sync" "github.com/lionkov/go9p/p" "github.com/lionkov/go9p/p/srv")
 #+BEGIN_SRC go :noweb yes :tangle fs.go :main no :package main
 <<src-dchan-file-dat>>
 <<src-dchan-faux-dat>>
@@ -367,7 +380,6 @@ func (file *File) Create(fid *srv.FFid, name string, perm uint32) (*srv.File, er
 
 func init() {
      fileslk = &sync.Mutex{}
-     user = p.OsUsers.Uid2User(os.Geteuid())
 }
 
 <<src-dchan-file-createctl>>
@@ -407,7 +419,16 @@ var debug = flag.Bool("d", false, "print debug messages")
 
 #+NAME: src-dchan-main
 #+BEGIN_SRC go
-var root *srv.File
+var (
+	root *File
+	user p.User
+	group p.Group
+)
+
+func init() {
+	user = p.OsUsers.Uid2User(os.Geteuid())
+	group = p.OsUsers.Gid2Group(os.Getegid())
+}
 
 func main() {
 	var err error
@@ -415,22 +436,21 @@ func main() {
 
 	flag.Parse()
 
-	user := p.OsUsers.Uid2User(os.Geteuid())
-	root = new(srv.File)
+	root = new(File)
 
-	err = root.Add(nil, "/", user, nil, p.DMDIR|0777, nil)
+	err = root.Add(nil, "/", user, group, p.DMDIR|0777, root)
 
 	if err != nil {
 		goto error
 	}
 
-        err = createctl(root, user)
+        err = createctl(root)
 
         if err != nil {
 		goto error
 	}
 
-	s = srv.NewFileSrv(root)
+	s = srv.NewFileSrv(&root.File)
 	s.Dotu = true
 
 	if *debug {
