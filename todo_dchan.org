@@ -85,7 +85,7 @@
 *** TODO Create intensive tests simulating network problems
     SCHEDULED: <2016-03-21 Mon>
 
-** Dchan-server [4/6]                                                :server:
+** Dchan-server [4/7]                                                :server:
 *** DONE Add basic unit tests to ob-go
      :LOGBOOK:
      CLOCK: [2016-03-15 Tue 15:48]--[2016-03-17 Thu 17:59] => 50:11
@@ -121,6 +121,11 @@
      CLOCK: [2016-03-17 Thu 9:12]--[2016-03-17 Thu 17:43] =>  8:31
      CLOCK: [2016-03-15 Tue 15:00]--[2016-03-15 Tue 15:46] =>  0:46
      :END:
+
+*** TODO Create machinery for userspace mounts
+    :LOGBOOK:
+    CLOCK: [2016-04-07 Thu 13:05]--[2016-04-07 Thu 17:08] =>  4:03
+    :END:
 
 
 ** TODO Port part of our architecture to use dchan

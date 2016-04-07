@@ -37,6 +37,15 @@ Read the [[https://golang.org/doc/install][Go Getting started]] tutorial.
 *** Source Makefile
 
 #+BEGIN_SRC makefile :tangle Makefile
+.PHONY: all tangle deps build run rund mount-all
+
+P9DIR=/n
+9PVERSION=9p2000.u
+MNTOPTIONS=	port=$(PORT),rw,user,noauto,unhide,cache=none,version=$(9PVERSION),\
+		dfltuid=`id -u`,dfltgid=`id -g`
+IPADDR=0.0.0.0
+PORT=6666
+
 all: clean tangle build test
 
 tangle:
@@ -47,6 +56,37 @@ deps:
 
 build: tangle deps
 	go build -v
+
+run: build
+	./dchan -addr $(IPADDR):$(PORT)
+
+rund: build
+	./dchan -addr $(IPADDR):$(PORT) -d
+
+mount: $(P9DIR)/dchan/ctl
+
+install-user-mount:
+	sudo su -c 'echo $(IPADDR) $(P9DIR)/dchan 9p $(MNTOPTIONS) >> /etc/fstab'
+	sudo su -c 'echo $(IPADDR) $(P9DIR)/dchan2 9p $(MNTOPTIONS) >> /etc/fstab'
+	sudo su -c 'echo $(IPADDR) $(P9DIR)/dchan3 9p $(MNTOPTIONS) >> /etc/fstab'
+
+$(P9DIR)/dchan/ctl:
+	mount -t 9p -o $(MNTOPTIONS) $(IPADDR) $(P9DIR)/dchan
+
+mount2: $(P9DIR)/dchan2/ctl
+
+$(P9DIR)/dchan2/ctl:
+	mount -t 9p -o $(MNTOPTIONS) $(IPADDR) $(P9DIR)/dchan2
+
+mount3: $(P9DIR)/dchan3/ctl
+
+$(P9DIR)/dchan3/ctl:
+	mount -t 9p -o $(MNTOPTIONS) $(IPADDR) $(P9DIR)/dchan3
+
+create-p9dir: $(P9DIR)/dchan $(P9DIR)/dchan2 $(P9DIR)/dchan3
+	mkdir -p $(P9DIR) $(P9DIR)/dchan $(P9DIR)/dchan2 $(P9DIR)/dchan3 || echo "run: sudo make create-p9dir"
+
+mount-all: mount mount2 mount3
 
 test: tangle build
 	chmod +x tests/acceptance/*.sh
@@ -164,7 +204,7 @@ teardown "${MNTPOINT}" "${DAEMONPID}"
 
 *** Dchan
 
-    Dchan extends the go9p file server (/srv.File/) data structure,
+    Dchan extends the go9p file server (/srv.Fsrv/) data structure,
     overriding the required methods for opening, reading, writing,
     etc, files. The core data structure is /File/ and it can be
     seen below:
@@ -232,6 +272,8 @@ var (
 	fileslk *sync.Mutex
 )
 #+END_SRC
+
+#+RESULTS: src-dchan-file-files
 
     /Createctl/ is the function responsible for creation of the /ctl/
     file.
